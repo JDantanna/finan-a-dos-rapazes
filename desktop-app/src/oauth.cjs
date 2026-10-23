@@ -17,7 +17,7 @@ class Vault{
  async clear(){await fs.rm(this.file,{force:true});}
 }
 async function readResponse(response){
- if(!response.ok){if(response.status===412)throw Error('CONFLICT: outro dispositivo alterou os dados. Recarregue do Drive antes de salvar.');if(response.status===401)throw Error('Sua autorização Google expirou. Saia e conecte novamente.');throw Error('Não foi possível acessar o Google (HTTP '+response.status+'). Nenhum salvamento foi confirmado.');}
+ if(!response.ok){if(response.status===412)throw Error('CONFLICT: outro dispositivo alterou os dados. Recarregue do Drive antes de salvar.');if(response.status===401)throw Error('Sua autorização Google expirou. Saia e conecte novamente.');throw Error('Não foi possível acessar o Google (HTTP '+response.status+'). O envio ao Drive não foi confirmado.');}
  const reader=response.body?.getReader();if(!reader)return {};const chunks=[];let size=0;
  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>4_100_000){await reader.cancel();throw Error('Resposta excede o limite de tamanho.');}chunks.push(value);}}finally{reader.releaseLock();}
  const text=Buffer.concat(chunks).toString('utf8');return text?JSON.parse(text):{};

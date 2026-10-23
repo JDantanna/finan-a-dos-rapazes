@@ -1,6 +1,6 @@
 {
   "name": "financa-dos-rapazes-desktop",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Controle financeiro pessoal conectado ao seu Google Drive",
   "author": "JDantanna",
@@ -8,7 +8,7 @@
   "scripts": {
     "prepare-ui": "python3 ../scripts/build-desktop.py",
     "start": "electron .",
-    "test": "node --test ../tests/desktop.test.cjs test/categories.test.cjs",
+    "test": "node --test ../tests/desktop.test.cjs test/*.test.cjs",
     "dist:win": "electron-builder --win nsis --x64 --publish never"
   },
   "dependencies": {

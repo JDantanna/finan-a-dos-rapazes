@@ -36,7 +36,7 @@ class FinanceDrive{
   if(record.schema!==3||record.owner!==this.user.email||typeof record.revision!=='string')throw Error('Este arquivo não pertence à conta atual ou é incompatível.');
   record.state=validate(record.state);return {record,etag};
  }
- response(record){return {profile:this.user,folderId:this.folder.id,fileId:this.file.id,revision:record.revision,lastBackup:record.savedAt,state:record.state};}
+ response(record){return {profile:this.user,folderId:this.folder.id,fileId:this.file.id,revision:record.revision,lastBackup:record.savedAt,operationId:record.operationId,state:record.state};}
  async loadFinance(){if(!this.user)this.user=await this.auth.profile();if(!this.file)await this.locate();return this.response((await this.read()).record);}
  async saveFinance(state,revision,operationId,account){
   this.guard(account);if(this.busy)throw Error('Aguarde o salvamento atual.');if(typeof operationId!=='string'||!/^[-\w]{8,200}$/.test(operationId))throw Error('Operação inválida.');
@@ -51,13 +51,14 @@ class FinanceDrive{
   }finally{this.busy=false;}
  }
  async listFinanceBackups(account){this.guard(account);return this.list("trashed=false and 'me' in owners and '"+this.folder.id+"' in parents and appProperties has {key='kind' and value='backup'}",{pageSize:'20',orderBy:'createdTime desc'});}
- async restoreFinanceBackup(id,revision,operationId,account){
+ async readBackup(id,account){
   this.guard(account);if(typeof id!=='string'||!/^[-\w]+$/.test(id))throw Error('Cópia inválida.');
   const meta=await readResponse(await this.auth.request(API+'/'+id+'?fields=parents,ownedByMe,trashed,appProperties'));
   if(meta.trashed||!meta.ownedByMe||!meta.parents?.includes(this.folder.id)||meta.appProperties?.kind!=='backup')throw Error('Esta cópia não pertence à sua pasta.');
   const copy=await readResponse(await this.auth.request(API+'/'+id+'?alt=media'));
   if(copy.schema!==3||copy.owner!==this.user.email)throw Error('Cópia de outra conta ou incompatível.');
-  return this.saveFinance(copy.state,revision,operationId,account);
+  return validate(copy.state);
  }
+ async restoreFinanceBackup(id,revision,operationId,account){return this.saveFinance(await this.readBackup(id,account),revision,operationId,account);}
 }
 module.exports={FinanceDrive};
