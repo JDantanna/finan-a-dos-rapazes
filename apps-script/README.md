@@ -72,3 +72,11 @@ Em **Relatórios**, o seletor **Lançamentos** permite receitas e despesas ou so
 Versão 3 publicada em 23/10/2026 na implantação existente, preservando o link `/exec`. O aplicativo real carregou e o filtro Somente despesas foi validado visualmente na base vazia. Para atualizações futuras, substitua `Código.gs` pelo conteúdo de `Code.gs`, substitua `Index.html` pelo HTML gerado e use **Implantar → Gerenciar implantações → Editar → Nova versão → Implantar**. As permissões não mudaram. O arquivo `report-filter.js` é fonte do empacotamento e não deve ser adicionado separadamente ao projeto Apps Script.
 
 Testes adicionais: filtros com várias fontes, receitas homônimas excluídas, centavos, fontes antigas, período vazio e validação do filtro no PDF. A interface foi testada no Google real com base vazia. A verificação do download filtrado não foi concluída nesta sessão; os testes locais de conteúdo PDF/CSV passaram.
+
+## Personalização (código preparado; publicação pendente)
+
+Em Configurações, a seção Personalização permite escolher a cor principal, o nome exibido do usuário e o título do aplicativo. Os valores são privados por conta e ficam no mesmo estado financeiro no Drive, com backup e restauração. Nome/título vazios usam os padrões Google/aplicativo. O nome escolhido também identifica o PDF; o título personalizado aparece na marca lateral, rodapé e documento da interface. A foto e a identidade Google permanecem associadas ao login.
+
+O botão Restaurar aparência padrão limpa as personalizações após confirmação do salvamento no Drive. As cores de destaque usam texto preto ou branco conforme a luminosidade. Os campos de texto têm limite de 80 caracteres; a cor usa hexadecimal com seis dígitos.
+
+Validação: dez grupos Apps Script passaram, incluindo persistência, separação de contas, restauração e entrada inválida. O HTML gerado foi validado sintaticamente. Publicação e teste visual real desta seção ficaram pendentes: o navegador de administração não conseguiu retomar seu estado de autenticação. A versão ativa continua sendo a versão 3 com filtro de fontes.

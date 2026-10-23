@@ -7,13 +7,16 @@ html=(dist/'index.html').read_text()
 html=re.sub(r'<script\b[^>]*\bsrc=["\'][^"\']+["\'][^>]*></script>','',html)
 html=re.sub(r'<link\b[^>]*rel="stylesheet"[^>]*>','',html)
 html=html.replace('<head>','<head><base target="_top">').replace('href="./"','href="#"')
-css=(dist/'style.css').read_text();html=html.replace('</head>','<style>'+css+'</style></head>')
+css=(dist/'style.css').read_text()+'\n.primary,.stat.highlight{color:var(--accent-contrast,#fff)}';html=html.replace('</head>','<style>'+css+'</style></head>')
 app=(dist/'app.js').read_text();app=app[:app.index('function profiles(')]
 app=re.sub(r'function settings\(\).*?(?=function openEntry)', '', app, flags=re.S)
 app=re.sub(r'function reports\(\).*?(?=function openEntry)', '', app, flags=re.S)
 app=re.sub(r'function csv\(\).*?(?=async function loadDemo)', '', app, flags=re.S)
 app=app.replace("toast(GoogleProfiles.store.current()?'Salvo neste navegador. Consulte o status do envio ao Drive.':'Alterações salvas no perfil local.')","toast('Salvo no seu Google Drive.')")
 app=app.replace('Entre com Google para separar seus dados e salvar cópias no Drive.','Sua conta Google e seus registros no Drive.')
+app=app.replace("accounts:state.accounts||[],incomeSources:state.incomeSources||[]","accounts:state.accounts||[],incomeSources:state.incomeSources||[],preferences:state.preferences")
+app=app.replace("incomeSources:state.incomeSources||[],accounts:state.accounts||[],demo:true","incomeSources:state.incomeSources||[],accounts:state.accounts||[],preferences:state.preferences,demo:true")
+app=app.replace("demo:!!data.demo});","demo:!!data.demo,preferences:data.preferences||state.preferences});")
 bootstrap='const FINANCE_WASM_BASE64='+repr(base64.b64encode((dist/'finance.wasm').read_bytes()).decode())+';\n'
 parts=[bootstrap,(dist/'income-sources.js').read_text(),(dest/'client.js').read_text(),(dist/'currency-input.js').read_text(),(dist/'expense-summary.js').read_text(),app,(dest/'report-filter.js').read_text(),(dest/'view.js').read_text()]
 script='\n'.join(parts).replace('</script','<\\/script')

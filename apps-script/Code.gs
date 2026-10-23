@@ -111,14 +111,14 @@ function validState_(state) {
   ids.clear();
   state.goals.forEach(function(g) { if (!g || !text(g.id,200) || ids.has(g.id) || !text(g.name,200) || !cents(g.target) || !Number.isSafeInteger(g.saved) || g.saved < 0 || g.saved > g.target || !date(g.deadline)) throw new Error('Confira os campos das metas.'); ids.add(g.id); });
   function registry(items,accounts) { if (!Array.isArray(items) || items.length > 1000) throw new Error('Cadastro inválido.'); const names = new Set(), keys = new Set(); items.forEach(function(item) { const name = item && typeof item.name === 'string' ? item.name.trim().normalize('NFC').toLowerCase() : ''; if (!item || !text(item.id,200) || keys.has(item.id) || !text(item.name,120) || names.has(name) || (accounts && ['checking','credit','benefit','cash','other'].indexOf(item.type)<0)) throw new Error('Cadastro inválido ou duplicado.'); names.add(name); keys.add(item.id); }); return items; }
-  const clean = {entries:state.entries,goals:state.goals,accounts:registry(state.accounts||[],true),incomeSources:registry(state.incomeSources||[],false),demo:!!state.demo};
+  const clean = {entries:state.entries,goals:state.goals,accounts:registry(state.accounts||[],true),incomeSources:registry(state.incomeSources||[],false),demo:!!state.demo,preferences:validPreferences_(state.preferences)};
   jsonBlob_(clean,'validation.json');return clean;
 }
 
 function exportFinancePdf(payload, expectedAccount) {
   const user = identity_();
   if (user.sub !== expectedAccount) throw new Error('A conta Google mudou. Exporte novamente.');
-  const html = reportPdfHtml_(payload,user.name);
+  const html = reportPdfHtml_(payload,load_(user).state.preferences?.userName || user.name);
   const pdf = Utilities.newBlob(html,'text/html','relatorio.html').getAs('application/pdf');
   const suffix = payload.expenseSource ? '-' + payload.expenseSource.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').slice(0,60) : payload.expensesOnly ? '-despesas' : '';
   const name = 'relatorio-' + payload.start + '-' + payload.end + suffix + '.pdf';
@@ -151,4 +151,13 @@ function reportPdfHtml_(p, name) {
     '<h2>Lançamentos do período</h2><table><thead><tr><th style="width:15%">Data</th><th style="width:35%">Descrição / categoria</th><th style="width:28%">Origem / conta ou cartão</th><th style="width:22%;text-align:right">Valor</th></tr></thead><tbody>'+(details||'<tr><td colspan="4">Nenhum lançamento neste período.</td></tr>')+'</tbody></table>'+
     (summary?'<h2>Despesas por conta ou cartão</h2><table><tbody>'+summary+'</tbody></table>':'')+
     '<div class="foot">'+p.rows.length+' lançamento(s). Valores previstos, incluindo recorrências e parcelas; não conciliados. Relatório de controle pessoal.</div></body></html>';
+}
+
+function validPreferences_(value) {
+  if(value==null)return {color:'#287560',userName:'',appTitle:''};
+  if(typeof value!=='object'||Array.isArray(value))throw new Error('Personalização inválida.');
+  const result={color:value.color??'#287560',userName:value.userName??'',appTitle:value.appTitle??''};
+  if(typeof result.color!=='string'||!/^#[0-9a-f]{6}$/i.test(result.color))throw new Error('Cor inválida.');
+  ['userName','appTitle'].forEach(function(key){if(typeof result[key]!=='string'||result[key].trim().length>80)throw new Error('Use até 80 caracteres no nome e título.');result[key]=result[key].trim();});
+  return result;
 }
