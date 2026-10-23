@@ -28,13 +28,13 @@ html = html.replace('<head>', '<head><meta http-equiv="Content-Security-Policy" 
 (out/'index.html').write_text(html,encoding='utf-8')
 (out/'app.js').write_text(script,encoding='utf-8')
 (out/'app.css').write_text(css,encoding='utf-8')
-server = (root/'apps-script/Code.gs').read_text(encoding='utf-8')
+server = (root/'apps-script/Code.gs').read_text(encoding='utf-8').split('\n// GENERATED CATEGORY REGISTRY')[0]
 names = ['validState_', 'validPreferences_', 'validReminders_', 'reportPdfHtml_']
 parts = []
 for name in names:
     start = server.index('function '+name+'(')
     following = server.find('\nfunction ', start+1)
     parts.append(server[start:following if following != -1 else len(server)])
-shim = "const Utilities={newBlob(value){return {getBytes:()=>Buffer.from(String(value))}}};\nfunction jsonBlob_(value){if(Buffer.byteLength(JSON.stringify(value))>4000000)throw Error('Limite de 4 MB excedido.');}\n"
+shim = (root/'dist/categories.js').read_text(encoding='utf-8')+"\nconst Utilities={newBlob(value){return {getBytes:()=>Buffer.from(String(value))}}};\nfunction jsonBlob_(value){if(Buffer.byteLength(JSON.stringify(value))>4000000)throw Error('Limite de 4 MB excedido.');}\n"
 (out/'shared.cjs').write_text(shim+'\n'.join(parts)+'\nmodule.exports={validate:validState_,pdfHtml:reportPdfHtml_};\n',encoding='utf-8')
 print('Desktop UI + shared validation generated.')

@@ -68,9 +68,9 @@ function driveFixture({etag='"etag-1"',patchStatus=200,owner=PROFILE.email,chang
  return {drive,counts:()=>({writes,backups})};
 }
 test('Drive salva personalização sem ETag no download, com cópia e atualização condicional idempotente',async()=>{
- const f=driveFixture(),next={...EMPTY,preferences:{color:'#123456',userName:'Pessoa',appTitle:'Finanças'}};
+ const f=driveFixture(),next={...EMPTY,categories:[{id:'campo',name:'Campo',symbol:'🚁',color:'#13579b'}],preferences:{color:'#123456',userName:'Pessoa',appTitle:'Finanças'}};
  const saved=await f.drive.saveFinance(next,'revision-1','operation-123',PROFILE.sub);
- assert.equal(saved.state.preferences.color,'#123456');assert.notEqual(saved.revision,'revision-1');assert.deepEqual(f.counts(),{writes:1,backups:1});
+ assert.equal(saved.state.preferences.color,'#123456');assert.equal((await f.drive.loadFinance()).state.categories[0].symbol,'🚁');assert.notEqual(saved.revision,'revision-1');assert.deepEqual(f.counts(),{writes:1,backups:1});
  assert.equal((await f.drive.loadFinance()).state.preferences.userName,'Pessoa');
  const repeated=await f.drive.saveFinance(next,'revision-1','operation-123',PROFILE.sub);assert.equal(saved.revision,repeated.revision);assert.deepEqual(f.counts(),{writes:1,backups:1});
 });

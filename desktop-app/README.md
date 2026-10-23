@@ -49,3 +49,9 @@ Antes da primeira release, testar: login e cancelamento; reiniciar e renovar aut
 ## Correção 1.0.1
 
 O download de conteúdo da API Drive v3 não garante o cabeçalho HTTP ETag. O desktop agora obtém o ETag explicitamente dos metadados da API v2, verifica a estabilidade antes e depois de ler o conteúdo e grava pelo endpoint v2 com `If-Match`. A pasta, o arquivo, a conta e o formato dos dados continuam os mesmos. Os testes reproduzem o download sem ETag e as alterações concorrentes durante leitura e gravação. A validação final com o Drive real deve ser feita após atualizar o aplicativo.
+
+## Categorias — 1.1.0
+
+O menu Categorias permite cadastrar e editar nome, símbolo/emoji e cor. Oito categorias padrão são oferecidas a contas antigas e novas, preservando os nomes dos lançamentos existentes. Renomear atualiza receitas e despesas da categoria, incluindo séries e parcelas; excluir remove somente o cadastro. Símbolos e cores aparecem nas tabelas e na distribuição de despesas. O cadastro acompanha os dados no Drive e o backup JSON.
+
+O campo Categoria agora usa sugestões próprias, com navegação por teclado e botão Limpar, mantendo a digitação livre após selecionar uma opção. A implementação evita a lista nativa que apresentava travamento de edição. Testes de interface com DOM isolado verificam cadastro, seleção, digitação posterior, troca, limpeza e edição/salvamento de um lançamento antigo; testes de domínio e processo principal verificam validação, renomeação e persistência JSON. O teste com a conta Google real continua sendo feito no aplicativo instalado.
