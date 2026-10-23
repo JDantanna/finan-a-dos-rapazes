@@ -13,13 +13,32 @@ function renderProfileStatus(info=GoogleProfiles.stateInfo()){
  const small=document.createElement('small');small.textContent=p?.email||'Conta Google';$('#profile-display').append(small);
  $('#profile-cloud-status').textContent=info.status;$('#cloud-toolbar-status').textContent=info.busy?'● Salvando no Drive…':info.status;$('#storage-notice').textContent='Google Drive · Cada pessoa usa a própria conta e a própria pasta de dados.';
 }
-function reports(){return `<section class="card"><div class="card-head"><div><h2>Relatório do período</h2><p>Selecione a semana, o mês ou o ano acima.</p></div><div class="report-actions"><button class="secondary" data-action="csv">↓ Exportar CSV</button><button class="primary" data-script-action="pdf">↓ Exportar PDF</button></div></div><div class="notice">Receitas, despesas e projeções do período selecionado, incluindo recorrências e parcelas.</div><div class="report-summary"><div>Receitas<b>${money(report.income)}</b></div><div>Despesas<b>${money(report.expense)}</b></div><div>Saldo previsto<b>${money(report.balance)}</b></div></div><div style="margin-top:28px">${rows(report.occurrences)}</div></section>`;}
+let reportKind='all',reportSource='';
+function selectedReport(){return ReportFilter.select(report.occurrences,reportKind,reportSource)}
+function reportScope(){return reportSource?'Despesas · '+reportSource:reportKind==='expense'?'Todas as despesas':'Receitas e despesas'}
+function reports(){
+ const selected=selectedReport(),sources=ReportFilter.sources(state);
+ return `<section class="card"><div class="card-head"><div><h2>Relatório do período</h2><p>Selecione a semana, o mês ou o ano acima.</p></div><div class="report-actions"><button class="secondary" data-action="csv">↓ Exportar CSV</button><button class="primary" data-script-action="pdf">↓ Exportar PDF</button></div></div>
+ <div style="display:flex;flex-wrap:wrap;gap:16px;margin:20px 0"><label style="flex:1;min-width:200px">Lançamentos<select id="report-kind"><option value="all" ${reportKind==='all'?'selected':''}>Receitas e despesas</option><option value="expense" ${reportKind==='expense'?'selected':''}>Somente despesas</option></select></label><label style="flex:1;min-width:200px">Fonte de despesa (conta ou cartão)<select id="report-source"><option value="">Todas as fontes de despesa</option>${sources.map(name=>`<option value="${esc(name)}" ${reportSource===name?'selected':''}>${esc(name)}</option>`).join('')}</select></label></div>
+ <div class="notice">${esc(reportScope())} · ${selected.occurrences.length} lançamento(s). A tabela, os totais e as exportações usam os mesmos filtros. Inclui recorrências e parcelas do período.</div><div class="report-summary">${reportKind==='all'&&!reportSource?`<div>Receitas<b>${money(selected.income)}</b></div>`:''}<div>Despesas<b>${money(selected.expense)}</b></div>${reportKind==='all'&&!reportSource?`<div>Saldo previsto<b>${money(selected.balance)}</b></div>`:''}</div><div style="margin-top:28px">${rows(selected.occurrences)}</div></section>`;
+}
+function csv(){
+ const cell=v=>'"'+String(v).replace(/^[=+@\-\t\r]/,"'$&").replaceAll('"','""')+'"';
+ const selected=selectedReport();
+ const lines=[['Data','Tipo','Descrição','Categoria','Origem da receita','Conta de recebimento','Conta ou cartão','Valor BRL','Repetição','Natureza'],...selected.occurrences.map(o=>[o.date,o.entry.kind==='income'?'Receita':'Despesa',o.entry.description,o.entry.category,o.entry.kind==='income'?o.entry.source:'',o.entry.kind==='income'?(o.entry.account||''):'',o.entry.kind==='expense'?o.entry.source:'',(o.entry.cents/100).toFixed(2).replace('.',','),frequencies[o.entry.frequency],'Previsto (não conciliado)'])];
+ const suffix=reportSource?'-'+reportSource.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').slice(0,60):reportKind==='expense'?'-despesas':'';
+ download(`relatorio-${range()[0]}-${range()[1]}${suffix}.csv`,'\ufeff'+lines.map(r=>r.map(cell).join(';')).join('\r\n'),'text/csv;charset=utf-8');toast('Relatório CSV exportado.');
+}
+document.addEventListener('change',e=>{
+ if(e.target.id==='report-kind'){reportKind=e.target.value;if(reportKind==='all')reportSource='';render();}
+ if(e.target.id==='report-source'){reportSource=e.target.value;if(reportSource)reportKind='expense';render();}
+});
 let pdfExporting=false;
 async function exportPdf(button){
  if(pdfExporting)return;pdfExporting=true;button.disabled=true;button.textContent='Gerando PDF…';
  try{
   const [start,end]=range(),account=scriptRecord.profile.sub;
-  const payload={start,end,rows:report.occurrences.map(o=>({date:o.date,kind:o.entry.kind,description:o.entry.description,category:o.entry.category,source:o.entry.source,account:o.entry.account||'',cents:o.entry.cents,frequency:frequencies[o.entry.frequency]}))};
+  const payload={start,end,expenseSource:reportSource,expensesOnly:reportKind==='expense',rows:selectedReport().occurrences.map(o=>({date:o.date,kind:o.entry.kind,description:o.entry.description,category:o.entry.category,source:o.entry.source,account:o.entry.account||'',cents:o.entry.cents,frequency:frequencies[o.entry.frequency]}))};
   const result=await scriptRpc('exportFinancePdf',payload,account);
   if(scriptRecord.profile.sub!==account)throw Error('A conta mudou. Exporte novamente.');
   const bytes=Uint8Array.from(atob(result.base64),c=>c.charCodeAt(0));
@@ -28,7 +47,7 @@ async function exportPdf(button){
 }
 function settings(){return `<section class="card settings-block"><h2>Dados no Google Drive</h2><p>Cada salvamento confirmado grava os dados no seu Google Drive. Uma cópia da versão anterior é mantida na mesma pasta.</p><button class="secondary" data-view="profiles">Conta Google e pasta de dados</button><hr><h2>Transferir registros</h2><p>Para trazer seus dados da versão anterior, baixe o backup JSON naquela versão e restaure aqui. Confira a conta Google antes de restaurar.</p><button class="secondary" data-action="backup">Baixar cópia JSON</button><button class="secondary" data-action="restore">Restaurar cópia JSON</button><hr><h2>Dados de exemplo</h2><p>Os dados fictícios, se carregados, também serão salvos no Drive da conta atual.</p><button class="secondary" data-action="demo">Carregar demonstração</button><button class="secondary remove-demo" data-action="clear-demo" ${demo?'':'disabled'}>Remover demonstração</button></section>`;}
 document.addEventListener('finance:cloud-status',()=>{if(view==='profiles')render();else renderProfileStatus()});
-document.addEventListener('finance:profile-change',safe(async()=>{++refreshVersion;for(const d of document.querySelectorAll('dialog[open]'))d.close();state=await api('/api/state');state.accounts||=[];state.incomeSources||=[];demo=!!state.demo;filter='';view='profiles';await refresh()}));
+document.addEventListener('finance:profile-change',safe(async()=>{++refreshVersion;for(const d of document.querySelectorAll('dialog[open]'))d.close();state=await api('/api/state');state.accounts||=[];state.incomeSources||=[];demo=!!state.demo;filter='';reportSource='';reportKind='all';view='profiles';await refresh()}));
 document.addEventListener('click',safe(async event=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.scriptAction==='reload'&&confirm('Recarregar os dados confirmados no Drive? Exporte uma cópia JSON antes se desejar preservar a versão exibida.'))await GoogleProfiles.synchronize();if(b.dataset.scriptAction==='history')await GoogleProfiles.loadHistory();if(b.dataset.scriptRestore&&confirm('Restaurar esta cópia no seu Drive? A versão atual será preservada como backup.'))await GoogleProfiles.restore(b.dataset.scriptRestore);}));
 
 document.addEventListener('click',safe(async e=>{const b=e.target.closest('button[data-script-action="pdf"]');if(b)await exportPdf(b);}));

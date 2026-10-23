@@ -120,18 +120,22 @@ function exportFinancePdf(payload, expectedAccount) {
   if (user.sub !== expectedAccount) throw new Error('A conta Google mudou. Exporte novamente.');
   const html = reportPdfHtml_(payload,user.name);
   const pdf = Utilities.newBlob(html,'text/html','relatorio.html').getAs('application/pdf');
-  const name = 'relatorio-' + payload.start + '-' + payload.end + '.pdf';
+  const suffix = payload.expenseSource ? '-' + payload.expenseSource.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').slice(0,60) : payload.expensesOnly ? '-despesas' : '';
+  const name = 'relatorio-' + payload.start + '-' + payload.end + suffix + '.pdf';
   return {name:name,base64:Utilities.base64Encode(pdf.getBytes())};
 }
 function reportPdfHtml_(p, name) {
   function validDate(v) { return typeof v==='string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(new Date(v+'T12:00:00Z').getTime()) && new Date(v+'T12:00:00Z').toISOString().slice(0,10)===v; }
   if (!p || !validDate(p.start) || !validDate(p.end) || p.start>p.end || !Array.isArray(p.rows) || p.rows.length>10000) throw new Error('Período inválido ou relatório muito grande. Exporte um período menor.');
+  if (p.expenseSource != null && (typeof p.expenseSource!=='string' || p.expenseSource.length>120)) throw new Error('Fonte de despesa inválida.');
   function esc(v) { return String(v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function date(v) { return v.slice(8,10)+'/'+v.slice(5,7)+'/'+v.slice(0,4); }
   function cash(v) { return 'R$ '+(v/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  const scope=p.expenseSource?'Despesas · '+p.expenseSource:p.expensesOnly?'Todas as despesas':'Receitas e despesas';
   let income=0,expense=0;const groups=Object.create(null);
   p.rows.forEach(function(row){
     if (!row || !validDate(row.date) || row.date<p.start || row.date>p.end || ['income','expense'].indexOf(row.kind)<0 || !Number.isSafeInteger(row.cents) || row.cents<=0 || row.cents>100000000000) throw new Error('Lançamento inválido para exportação.');
+    if ((p.expensesOnly || p.expenseSource) && row.kind!=='expense' || p.expenseSource && row.source!==p.expenseSource) throw new Error('Lançamento fora do filtro selecionado.');
     ['description','category','source','account','frequency'].forEach(function(k){if(typeof row[k]!=='string'||row[k].length>1000)throw new Error('Descrição inválida para exportação.');});
     if(row.kind==='income')income+=row.cents;else {expense+=row.cents;groups[row.source]=(groups[row.source]||0)+row.cents;}
   });
@@ -143,7 +147,7 @@ function reportPdfHtml_(p, name) {
   const summary=Object.keys(groups).sort(function(a,b){return groups[b]-groups[a]}).map(function(key){return '<tr><td>'+esc(key)+'</td><td class="amount">'+cash(groups[key])+'</td></tr>'}).join('');
   return '<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><style>'+ 
     '@page{size:A4;margin:18mm 15mm}body{font-family:Arial,sans-serif;color:#243344;font-size:10px;line-height:1.5}h1{font-size:26px;margin:0 0 5px;color:#142a3a}h2{font-size:14px;margin:26px 0 10px}p{margin:4px 0}.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#627783}.header{border-bottom:3px solid #197d78;padding-bottom:18px}.muted{color:#6d7983;font-size:9px}table{width:100%;border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}tr{page-break-inside:avoid}th{text-align:left;color:#5b6d78;text-transform:uppercase;font-size:8px;letter-spacing:1px;padding:10px 7px;border-bottom:2px solid #cad8de}td{padding:10px 7px;border-bottom:1px solid #e4ebee;vertical-align:top;word-wrap:break-word}tbody tr:nth-child(even){background:#f6f9fa}.amount{text-align:right;white-space:nowrap;font-weight:bold}.income{color:#12716a}.date{white-space:nowrap}.type{font-size:8px;text-transform:uppercase;letter-spacing:1px}.totals{margin-top:20px;background:#edf5f5}.totals td{width:33%;padding:14px 12px;border:0}.totals b{display:block;font-size:19px;margin-top:5px}.foot{margin-top:22px;border-top:1px solid #dce5e9;padding-top:10px;font-size:8px;color:#6d7983}' +
-    '</style></head><body><div class="header"><div class="eyebrow">Relatório financeiro</div><h1>'+esc(name)+'</h1><p>'+date(p.start)+' a '+date(p.end)+'</p></div><table class="totals"><tr><td>Receitas<b class="income">'+cash(income)+'</b></td><td>Despesas<b>'+cash(expense)+'</b></td><td>Saldo previsto<b>'+cash(income-expense)+'</b></td></tr></table>'+
+    '</style></head><body><div class="header"><div class="eyebrow">Relatório financeiro</div><h1>'+esc(name)+'</h1><p>'+date(p.start)+' a '+date(p.end)+'</p><p>'+esc(scope)+'</p></div><table class="totals"><tr>'+(!(p.expensesOnly||p.expenseSource)?'<td>Receitas<b class="income">'+cash(income)+'</b></td>':'')+'<td>Despesas<b>'+cash(expense)+'</b></td>'+(!(p.expensesOnly||p.expenseSource)?'<td>Saldo previsto<b>'+cash(income-expense)+'</b></td>':'')+'</tr></table>'+
     '<h2>Lançamentos do período</h2><table><thead><tr><th style="width:15%">Data</th><th style="width:35%">Descrição / categoria</th><th style="width:28%">Origem / conta ou cartão</th><th style="width:22%;text-align:right">Valor</th></tr></thead><tbody>'+(details||'<tr><td colspan="4">Nenhum lançamento neste período.</td></tr>')+'</tbody></table>'+
     (summary?'<h2>Despesas por conta ou cartão</h2><table><tbody>'+summary+'</tbody></table>':'')+
     '<div class="foot">'+p.rows.length+' lançamento(s). Valores previstos, incluindo recorrências e parcelas; não conciliados. Relatório de controle pessoal.</div></body></html>';

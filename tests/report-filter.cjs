@@ -1,0 +1,13 @@
+'use strict';
+const assert=require('node:assert/strict');
+const Filter=require('../apps-script/report-filter.js');
+const occurrence=(kind,source,cents,date='2026-10-23',description='Campo')=>({date,entry:{kind,source,cents,description}});
+const items=[occurrence('expense','Cartão Sky',12001),occurrence('expense','Cartão Sky',4499),occurrence('expense','Nubank',8900),occurrence('income','Cartão Sky',200000)];
+assert.equal(Filter.select(items).occurrences.length,4);
+const sky=Filter.select(items,'expense','Cartão Sky');assert.equal(sky.occurrences.length,2);assert.equal(sky.expense,16500);assert.equal(sky.income,0);assert.equal(sky.balance,-16500);
+assert.equal(Filter.select(items,'all','Cartão Sky').occurrences.length,2);
+assert.equal(Filter.select(items,'expense').expense,25400);
+assert.equal(Filter.select([],'expense','Cartão Sky').occurrences.length,0);
+assert.equal(Filter.select(items,'expense','Cartão Sky antigo').expense,0);
+assert.deepEqual(Filter.sources({accounts:[{name:'Flash'},{name:'Cartão Sky'}],entries:items.map(o=>o.entry)}),['Cartão Sky','Flash','Nubank']);
+console.log('Filtro: todas as fontes, somente despesas, cartão específico, receitas homônimas excluídas, centavos, período vazio e fontes antigas passaram.');

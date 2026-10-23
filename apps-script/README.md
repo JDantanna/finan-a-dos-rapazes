@@ -64,3 +64,11 @@ O nome e a foto são consultados com `Drive.About.get` para a conta que está ex
 Em **Relatórios**, selecione o período e escolha **Exportar PDF** ou **Exportar CSV**. O PDF A4 contém somente a identificação do usuário, período, totais, todos os lançamentos previstos e despesas por conta/cartão. Não inclui a marca do aplicativo. A conversão ocorre no Google, sem gravar um PDF adicional no Drive; o download usa os dados já carregados na tela. O limite é de 10.000 ocorrências por relatório, sujeito às cotas de conversão do Apps Script.
 
 Validação real: versão 2, nome Rafael Dantanna e PDF de outubro/2026 baixado, aberto e revisado visualmente. A base acessada estava vazia; detalhes preenchidos, centavos, escaping e isolamento foram cobertos em testes simulados. Não foi feito teste real com uma segunda conta.
+
+## Atualização preparada: filtro de fonte de despesa
+
+Em **Relatórios**, o seletor **Lançamentos** permite receitas e despesas ou somente despesas. O seletor **Fonte de despesa (conta ou cartão)** oferece os cadastros e os nomes usados em despesas antigas. Selecionar uma fonte ativa somente despesas dessa fonte; receitas com o mesmo nome são excluídas. O período selecionado continua sendo respeitado. A tabela, os totais, CSV e PDF compartilham o mesmo filtro. O PDF identifica a fonte, inclusive quando não há despesas no período.
+
+Esta atualização está preparada no código, mas não foi publicada no link `/exec`: a sessão do navegador de administração não pôde ser retomada. Para aplicá-la, substitua `Código.gs` pelo conteúdo de `Code.gs`, substitua `Index.html` pelo HTML gerado e use **Implantar → Gerenciar implantações → Editar → Nova versão → Implantar**. As permissões não mudaram. O arquivo `report-filter.js` é fonte do empacotamento e não deve ser adicionado separadamente ao projeto Apps Script.
+
+Testes adicionais: filtros com várias fontes, receitas homônimas excluídas, centavos, fontes antigas, período vazio e validação do filtro no PDF. Não houve teste desta alteração no Google real.
