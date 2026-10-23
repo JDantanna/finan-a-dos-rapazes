@@ -4,7 +4,9 @@ Esta edição foi preparada para hospedar o aplicativo no Google e salvar os reg
 
 ## Situação desta entrega
 
-Código e testes locais concluídos. A publicação e os testes contra o Google real ainda dependem de concluir o login Google e criar a implantação. Não existe um link Apps Script ativo confirmado nesta entrega.
+Versão 2 publicada no Google Apps Script. Nome da conta Google e download de PDF foram confirmados na aplicação real.
+
+[Abrir aplicativo](https://script.google.com/macros/s/AKfycbwOkdb82APBmRG7z1C7tSSurWCsrs0eEZNbF9V9OjBpE6TcF2dmk6D0qvef5goFa8asKQ/exec).
 
 ## Instalar uma vez na conta do proprietário
 
@@ -51,6 +53,14 @@ O arquivo `Index.html` é gerado. `client.js` e `view.js` são fontes do empacot
 
 ## Testes executados
 
-Sete grupos de testes locais usam serviços Google simulados: isolamento por usuário, idempotência, conflitos, restauração, bloqueio de conta incorreta, validação de dados e erro de upload. O HTML gerado é validado sintaticamente e contém o módulo Rust.
+Oito grupos de testes locais usam serviços Google simulados: isolamento por usuário, idempotência, conflitos, restauração, bloqueio de conta incorreta, validação de dados e erro de upload. O HTML gerado é validado sintaticamente e contém o módulo Rust.
 
 Esses testes não substituem a publicação, a autorização Google e a validação real em duas contas.
+
+## Perfil e exportação PDF
+
+O nome e a foto são consultados com `Drive.About.get` para a conta que está executando o aplicativo, sem novos escopos. Se a foto não estiver disponível, a interface apresenta a inicial do nome. Uma falha temporária na consulta do perfil preserva o acesso financeiro e usa o e-mail como identificação.
+
+Em **Relatórios**, selecione o período e escolha **Exportar PDF** ou **Exportar CSV**. O PDF A4 contém somente a identificação do usuário, período, totais, todos os lançamentos previstos e despesas por conta/cartão. Não inclui a marca do aplicativo. A conversão ocorre no Google, sem gravar um PDF adicional no Drive; o download usa os dados já carregados na tela. O limite é de 10.000 ocorrências por relatório, sujeito às cotas de conversão do Apps Script.
+
+Validação real: versão 2, nome Rafael Dantanna e PDF de outubro/2026 baixado, aberto e revisado visualmente. A base acessada estava vazia; detalhes preenchidos, centavos, escaping e isolamento foram cobertos em testes simulados. Não foi feito teste real com uma segunda conta.

@@ -9,7 +9,7 @@ const context={console,Date,JSON,Set,Number,Error,encodeURIComponent,isNaN,
  LockService:{getUserLock:()=>({tryLock:()=>true,releaseLock:()=>{}})},
  PropertiesService:{getUserProperties:()=>({getProperty:k=>properties.get(active+':'+k)||null,setProperty:(k,v)=>properties.set(active+':'+k,v)})},
  UrlFetchApp:{fetch:url=>{const file=files.get(url.split('/').at(-1).split('?')[0]);const ok=file&&file.owner===active;return{getResponseCode:()=>ok?200:403,getContent:()=>Buffer.from(file?.data||''),getContentText:()=>file?.data||''}}},
- Drive:{Files:{
+ Drive:{About:{get:()=>({user:{displayName:active==='a@example.test'?'Ana Silva':'Bruno Santos',photoLink:'https://lh3.googleusercontent.com/photo'}})},Files:{
   create(meta,content){const file={...meta,id:'file-'+(++id),owner:active,data:content?.text||'',createdTime:new Date(1700000000000+id*1000).toISOString(),trashed:false};files.set(file.id,file);return{id:file.id}},
   get(fileId){const f=files.get(fileId);if(!f)throw Error('404');return{...f,ownedByMe:f.owner===active}},
   update(meta,fileId,content){if(failUpdate)throw Error('network');const f=files.get(fileId);assert.equal(f.owner,active);f.data=content.text;return{id:fileId}},
@@ -24,3 +24,8 @@ active=effective='b@example.test';assert.throws(()=>context.restoreFinanceBackup
 for(const change of [s=>s.entries[0].cents=-1,s=>s.entries[0].date='2026-02-30',s=>s.entries.push({...s.entries[0]}),s=>s.accounts=[{id:'x',name:'A',type:'invalid'}],s=>s.goals=[{id:'g',name:'G',target:1,saved:2,deadline:'2027-01-01'}]]){const bad=state(1);change(bad);assert.throws(()=>context.validState_(bad));}console.log('5. Valores, datas, metas e registros inválidos são rejeitados.');
 failUpdate=true;assert.throws(()=>context.saveFinance(state(20000),restored.revision,'operation-4',a.profile.sub),/network/);failUpdate=false;assert.equal(context.loadFinance().revision,restored.revision);assert.ok(!JSON.stringify(context.loadFinance()).includes('SERVER_ONLY_FAKE_TOKEN'));console.log('6. Falha no envio não troca a versão atual; tokens nunca chegam ao navegador.');
 const html=fs.readFileSync('apps-script/Index.html','utf8');assert.ok(!html.includes('accounts.google.com/gsi/client'));assert.ok(!html.includes('FINANCE_GOOGLE_CLIENT_ID'));assert.ok(html.includes('FINANCE_WASM_BASE64'));assert.ok(html.includes('google.script.run'));const code=html.match(/<script>([\s\S]*)<\/script>/)[1];new vm.Script(code);console.log('7. HTML independente contém o núcleo Rust, não pede Client ID e tem JavaScript válido.');
+
+assert.equal(context.loadFinance().profile.name,'Ana Silva');
+assert.equal(context.loadFinance().profile.picture,'https://lh3.googleusercontent.com/photo');
+const payload={start:'2026-10-01',end:'2026-10-31',rows:[{date:'2026-10-23',kind:'expense',description:'Compra <teste> · parcela 1/4',category:'Casa',source:'__proto__',account:'',cents:10001,frequency:'Uma vez'}]};
+const pdfHtml=context.reportPdfHtml_(payload,'Ana & Silva');assert.ok(pdfHtml.includes('Ana &amp; Silva'));assert.ok(pdfHtml.includes('Compra &lt;teste&gt;'));assert.ok(pdfHtml.includes('100,01'));assert.ok(!pdfHtml.includes('Finança dos Rapazes'));assert.ok(pdfHtml.includes('__proto__'));assert.throws(()=>context.reportPdfHtml_({...payload,start:'2026-02-30'},'Ana'));assert.throws(()=>context.exportFinancePdf(payload,b.profile.sub),/conta Google mudou/);assert.ok(context.reportPdfHtml_({...payload,rows:[]},'Ana').includes('Nenhum lançamento'));console.log('8. Nome/foto reais, PDF sem marca, centavos, texto seguro, período vazio e conta correta.');
