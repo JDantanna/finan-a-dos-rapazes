@@ -6,7 +6,7 @@ Esta edição foi preparada para hospedar o aplicativo no Google e salvar os reg
 
 Versão 2 publicada no Google Apps Script. Nome da conta Google e download de PDF foram confirmados na aplicação real.
 
-[Abrir aplicativo](https://script.google.com/macros/s/AKfycbwOkdb82APBmRG7z1C7tSSurWCsrs0eEZNbF9V9OjBpE6TcF2dmk6D0qvef5goFa8asKQ/exec).
+O aplicativo usa o mesmo endereço /exec da implantação existente.
 
 ## Instalar uma vez na conta do proprietário
 
@@ -63,7 +63,7 @@ O nome e a foto são consultados com `Drive.About.get` para a conta que está ex
 
 Em **Relatórios**, selecione o período e escolha **Exportar PDF** ou **Exportar CSV**. O PDF A4 contém somente a identificação do usuário, período, totais, todos os lançamentos previstos e despesas por conta/cartão. Não inclui a marca do aplicativo. A conversão ocorre no Google, sem gravar um PDF adicional no Drive; o download usa os dados já carregados na tela. O limite é de 10.000 ocorrências por relatório, sujeito às cotas de conversão do Apps Script.
 
-Validação real: versão 2, nome Rafael Dantanna e PDF de outubro/2026 baixado, aberto e revisado visualmente. A base acessada estava vazia; detalhes preenchidos, centavos, escaping e isolamento foram cobertos em testes simulados. Não foi feito teste real com uma segunda conta.
+Validação real: versão 2, nome nome da conta autenticada e PDF de outubro/2026 baixado, aberto e revisado visualmente. A base acessada estava vazia; detalhes preenchidos, centavos, escaping e isolamento foram cobertos em testes simulados. Não foi feito teste real com uma segunda conta.
 
 ## Filtro de fonte de despesa — versão 3 publicada
 
@@ -73,10 +73,10 @@ Versão 3 publicada em 23/10/2026 na implantação existente, preservando o link
 
 Testes adicionais: filtros com várias fontes, receitas homônimas excluídas, centavos, fontes antigas, período vazio e validação do filtro no PDF. A interface foi testada no Google real com base vazia. A verificação do download filtrado não foi concluída nesta sessão; os testes locais de conteúdo PDF/CSV passaram.
 
-## Personalização (código preparado; publicação pendente)
+## Personalização — versão 4 publicada
 
 Em Configurações, a seção Personalização permite escolher a cor principal, o nome exibido do usuário e o título do aplicativo. Os valores são privados por conta e ficam no mesmo estado financeiro no Drive, com backup e restauração. Nome/título vazios usam os padrões Google/aplicativo. O nome escolhido também identifica o PDF; o título personalizado aparece na marca lateral, rodapé e documento da interface. A foto e a identidade Google permanecem associadas ao login.
 
 O botão Restaurar aparência padrão limpa as personalizações após confirmação do salvamento no Drive. As cores de destaque usam texto preto ou branco conforme a luminosidade. Os campos de texto têm limite de 80 caracteres; a cor usa hexadecimal com seis dígitos.
 
-Validação: dez grupos Apps Script passaram, incluindo persistência, separação de contas, restauração e entrada inválida. O HTML gerado foi validado sintaticamente. Publicação e teste visual real desta seção ficaram pendentes: o navegador de administração não conseguiu retomar seu estado de autenticação. A versão ativa continua sendo a versão 3 com filtro de fontes.
+Validação: dez grupos Apps Script passaram, incluindo persistência, separação de contas, restauração e entrada inválida. O HTML gerado foi validado sintaticamente. Versão 4 publicada em 23/10/2026 na implantação existente. Os campos de personalização, o salvamento no Drive e a persistência após recarga foram confirmados no Google real. Um conflito entre abas foi bloqueado; a versão mais recente foi recarregada e preservada. A identidade Google, permissões e link de acesso não mudaram.

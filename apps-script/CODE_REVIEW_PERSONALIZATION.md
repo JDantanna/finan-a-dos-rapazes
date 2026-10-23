@@ -6,5 +6,5 @@
 - Atualização visual após confirmação de salvamento; erro no Drive preserva a versão exibida.
 - Preferências preservadas nos fluxos de backup JSON, restauração, demonstração e remoção da demonstração.
 - PDF usa o nome personalizado salvo no Drive, com fallback para o nome Google.
-- Contraste de botões principais escolhido pela luminosidade; teste visual real ainda pendente.
-- Dez grupos de testes Apps Script e testes de filtros passaram. Publicação bloqueada pela sessão de autenticação do navegador; versão ativa 3 permanece inalterada.
+- Contraste de botões principais escolhido pela luminosidade; interface real confirmada na versão 4.
+- Dez grupos de testes Apps Script e testes de filtros passaram. Versão 4 publicada na mesma implantação. Salvamento e recarga reais passaram; conflito entre abas bloqueado sem sobrescrita e preferências mais recentes preservadas.
