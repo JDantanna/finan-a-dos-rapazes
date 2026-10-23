@@ -45,3 +45,7 @@ O botão **Checar atualização** está na tela inicial e nas configurações. A
 Para atualizar: altere o código, aumente `version` em `desktop-app/package.json` e o lockfile, valide no Windows e publique pelo workflow. A release contém `.exe`, `.blockmap` e `latest.yml`. Apenas modificar arquivos no GitHub não publica uma versão instalável. Não apague as releases anteriores para que reinstalação e diagnóstico permaneçam possíveis.
 
 Antes da primeira release, testar: login e cancelamento; reiniciar e renovar autorização; contas distintas; migração de JSON; salvamento/recarga e conflito em dois computadores; relatórios por fonte; parcelas; popup de vencimentos; instalação/desinstalação; atualização de uma versão anterior para outra publicada.
+
+## Correção 1.0.1
+
+O download de conteúdo da API Drive v3 não garante o cabeçalho HTTP ETag. O desktop agora obtém o ETag explicitamente dos metadados da API v2, verifica a estabilidade antes e depois de ler o conteúdo e grava pelo endpoint v2 com `If-Match`. A pasta, o arquivo, a conta e o formato dos dados continuam os mesmos. Os testes reproduzem o download sem ETag e as alterações concorrentes durante leitura e gravação. A validação final com o Drive real deve ser feita após atualizar o aplicativo.

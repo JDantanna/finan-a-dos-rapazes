@@ -55,21 +55,27 @@ test('Leitura interrompe respostas grandes antes de carregar todo o arquivo',asy
  let cancelled=false;const response=new Response(new ReadableStream({pull(controller){controller.enqueue(new Uint8Array(1_000_000))},cancel(){cancelled=true}}));
  await assert.rejects(()=>readResponse(response),/limite de tamanho/);assert.equal(cancelled,true);
 });
-function driveFixture({etag='"etag-1"',patchStatus=200,owner=PROFILE.email}={}){
- let current={schema:3,owner,revision:'revision-1',savedAt:'2026-10-23T12:00:00Z',state:EMPTY},writes=0,backups=0;
+function driveFixture({etag='"etag-1"',patchStatus=200,owner=PROFILE.email,changeDuringRead=false}={}){
+ let current={schema:3,owner,revision:'revision-1',savedAt:'2026-10-23T12:00:00Z',state:EMPTY},writes=0,backups=0,metadataReads=0;
  const auth={profile:async()=>PROFILE,request:async(url,options={})=>{
   if(options.method==='POST'){backups++;return json({id:'backup-1'});}
-  if(options.method==='PATCH'){writes++;assert.equal(options.headers['If-Match'],'"etag-1"');if(patchStatus!==200)return json({},patchStatus);current=JSON.parse(options.body);return json({id:'file-a'});}
-  return json(current,200,etag?{etag}:{});
+  if(options.method==='PUT'){writes++;assert.equal(new URL(url).pathname,'/upload/drive/v2/files/file-a');assert.equal(options.headers['If-Match'],'"etag-1"');if(patchStatus!==200)return json({},patchStatus);current=JSON.parse(options.body);return json({id:'file-a'});}
+  if(new URL(url).pathname==='/drive/v2/files/file-a'){metadataReads++;assert.equal(new URL(url).searchParams.get('fields'),'etag');return json({etag:changeDuringRead&&metadataReads>1?'"etag-2"':etag});}
+  // Reproduce the real Drive response: no ETag HTTP header on media downloads.
+  return json(current);
  }};
  const drive=new FinanceDrive(auth);drive.user=PROFILE;drive.folder={id:'folder-a'};drive.file={id:'file-a'};
  return {drive,counts:()=>({writes,backups})};
 }
-test('Drive cria cópia e salva condicionalmente; repetição da mesma operação é idempotente',async()=>{
+test('Drive salva personalização sem ETag no download, com cópia e atualização condicional idempotente',async()=>{
  const f=driveFixture(),next={...EMPTY,preferences:{color:'#123456',userName:'Pessoa',appTitle:'Finanças'}};
  const saved=await f.drive.saveFinance(next,'revision-1','operation-123',PROFILE.sub);
  assert.equal(saved.state.preferences.color,'#123456');assert.notEqual(saved.revision,'revision-1');assert.deepEqual(f.counts(),{writes:1,backups:1});
+ assert.equal((await f.drive.loadFinance()).state.preferences.userName,'Pessoa');
  const repeated=await f.drive.saveFinance(next,'revision-1','operation-123',PROFILE.sub);assert.equal(saved.revision,repeated.revision);assert.deepEqual(f.counts(),{writes:1,backups:1});
+});
+test('Drive interrompe leitura que mudou entre metadados e conteúdo, sem escrever',async()=>{
+ const f=driveFixture({changeDuringRead:true});await assert.rejects(()=>f.drive.saveFinance(EMPTY,'revision-1','operation-123',PROFILE.sub),/CONFLICT/);assert.deepEqual(f.counts(),{writes:0,backups:0});
 });
 test('Drive preserva dados em conflito, ETag ausente ou conta incorreta',async()=>{
  const f=driveFixture();await assert.rejects(()=>f.drive.saveFinance(EMPTY,'old','operation-123',PROFILE.sub),/CONFLICT/);assert.deepEqual(f.counts(),{writes:0,backups:0});

@@ -3,6 +3,9 @@ const {randomUUID}=require('node:crypto');
 const {readResponse}=require('./oauth.cjs');
 const {validate}=require('../generated/shared.cjs');
 const API='https://www.googleapis.com/drive/v3/files';
+// v3 media downloads do not guarantee an ETag header. v2 exposes the file
+// ETag in metadata and accepts it on its conditional content update endpoint.
+const VERSION_API='https://www.googleapis.com/drive/v2/files';
 const MARKER='financa-dos-rapazes-desktop-v1';
 const EMPTY={entries:[],goals:[],accounts:[],incomeSources:[],demo:false};
 class FinanceDrive{
@@ -25,8 +28,11 @@ class FinanceDrive{
  }
  record(state,operationId){return {schema:3,owner:this.user.email,revision:randomUUID(),operationId,savedAt:new Date().toISOString(),state:validate(state)};}
  async read(){
+  const version=async()=>{const meta=await readResponse(await this.auth.request(VERSION_API+'/'+this.file.id+'?fields=etag&updateViewedDate=false'));if(typeof meta.etag!=='string'||!meta.etag)throw Error('O Drive não retornou a versão do arquivo. Salvamento interrompido para preservar os dados.');return meta.etag;};
+  const etag=await version();
   const response=await this.auth.request(API+'/'+this.file.id+'?alt=media');
-  const etag=response.headers.get('etag');const record=await readResponse(response);
+  const record=await readResponse(response);
+  if(await version()!==etag)throw Error('CONFLICT: o arquivo mudou durante a leitura. Recarregue do Drive e tente novamente.');
   if(record.schema!==3||record.owner!==this.user.email||typeof record.revision!=='string')throw Error('Este arquivo não pertence à conta atual ou é incompatível.');
   record.state=validate(record.state);return {record,etag};
  }
@@ -38,10 +44,9 @@ class FinanceDrive{
    state=validate(state);const {record,etag}=await this.read();
    if(record.operationId===operationId)return this.response(record);
    if(record.revision!==revision)throw Error('CONFLICT: dados alterados em outro dispositivo. Exporte uma cópia e recarregue do Drive.');
-   if(!etag)throw Error('O Drive não retornou a versão do arquivo. Salvamento interrompido para preservar os dados.');
    await this.create({name:'backup-'+record.revision+'.json',parents:[this.folder.id],appProperties:{kind:'backup'}},record);
    const next=this.record(state,operationId);
-   await readResponse(await this.auth.request(API.replace('/drive/','/upload/drive/')+'/'+this.file.id+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'application/json','If-Match':etag},body:JSON.stringify(next)}));
+   await readResponse(await this.auth.request(VERSION_API.replace('/drive/','/upload/drive/')+'/'+this.file.id+'?uploadType=media',{method:'PUT',headers:{'Content-Type':'application/json','If-Match':etag},body:JSON.stringify(next)}));
    return this.response(next);
   }finally{this.busy=false;}
  }
