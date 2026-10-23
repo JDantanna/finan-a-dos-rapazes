@@ -1,0 +1,74 @@
+name: Instalador Windows
+on:
+  push:
+    branches: [main]
+    paths: ['desktop-app/**', 'apps-script/**', 'dist/**', 'scripts/build-desktop.py', 'scripts/build-apps-script.py', 'tests/desktop.test.cjs', '.github/workflows/desktop-windows.yml']
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publicar esta versão no GitHub Releases (requer OAuth configurado)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: desktop-app/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+        working-directory: desktop-app
+      - run: python scripts/build-desktop.py
+      - run: node --test tests/desktop.test.cjs
+      - name: Configurar cliente Google para computador
+        shell: pwsh
+        env:
+          GOOGLE_DESKTOP_CLIENT_JSON: ${{ secrets.GOOGLE_DESKTOP_CLIENT_JSON }}
+          PUBLISH_RELEASE: ${{ inputs.publish }}
+        run: |
+          if ($env:GOOGLE_DESKTOP_CLIENT_JSON) {
+            $client = $env:GOOGLE_DESKTOP_CLIENT_JSON | ConvertFrom-Json
+            if (!$client.installed.client_id -or !$client.installed.client_secret) { throw 'Cliente OAuth inválido; use tipo App para computador.' }
+            [IO.File]::WriteAllText("$pwd/desktop-app/oauth-client.json", $env:GOOGLE_DESKTOP_CLIENT_JSON)
+          } elseif ($env:PUBLISH_RELEASE -eq 'true') {
+            throw 'Configure GOOGLE_DESKTOP_CLIENT_JSON antes de publicar uma edição utilizável.'
+          }
+      - run: npm run dist:win
+        working-directory: desktop-app
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Financa-dos-Rapazes-Windows
+          path: |
+            desktop-app/release/*.exe
+            desktop-app/release/*.blockmap
+            desktop-app/release/latest.yml
+          if-no-files-found: error
+          retention-days: 30
+  publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish
+    needs: windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Financa-dos-Rapazes-Windows
+          path: installer
+      - name: Publicar instalador e manifesto de atualização
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(node -p "require('./desktop-app/package.json').version")
+          gh release create "v$VERSION" installer/* --target "$GITHUB_SHA" --title "Windows $VERSION" --notes 'Aplicativo Windows com dados no Google Drive. Instale o arquivo .exe. As próximas versões são consultadas pelo botão Checar atualização.' --latest

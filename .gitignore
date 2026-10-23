@@ -9,3 +9,6 @@ node_modules/
 *.exe
 *-backup-*.json
 .DS_Store
+desktop-app/release/
+desktop-app/generated/
+desktop-app/oauth-client.json

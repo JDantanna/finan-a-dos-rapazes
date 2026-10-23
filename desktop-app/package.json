@@ -1,0 +1,26 @@
+{
+  "name": "financa-dos-rapazes-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Controle financeiro pessoal conectado ao seu Google Drive",
+  "author": "JDantanna",
+  "main": "src/main.cjs",
+  "scripts": {
+    "prepare-ui": "python3 ../scripts/build-desktop.py",
+    "start": "electron .",
+    "test": "node --test ../tests/desktop.test.cjs",
+    "dist:win": "electron-builder --win nsis --x64 --publish never"
+  },
+  "dependencies": {"electron-updater": "6.8.9"},
+  "devDependencies": {"electron": "45.0.0", "electron-builder": "26.15.3"},
+  "build": {
+    "appId": "br.com.financadosrapazes.desktop",
+    "productName": "Finança dos Rapazes",
+    "asar": true,
+    "directories": {"output": "release"},
+    "files": ["src/**", "ui/**", "generated/**", "oauth-client.json", "package.json"],
+    "win": {"target": "nsis", "artifactName": "Financa-dos-Rapazes-${version}-Windows-${arch}.${ext}"},
+    "nsis": {"oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "deleteAppDataOnUninstall": false, "createDesktopShortcut": true},
+    "publish": [{"provider": "github", "owner": "JDantanna", "repo": "finan-a-dos-rapazes", "releaseType": "release"}]
+  }
+}

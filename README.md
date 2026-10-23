@@ -28,8 +28,9 @@ Os cálculos executam em Rust compilado para WebAssembly. Os dados desta versão
 | `tests/` | Testes JavaScript e integração com WebAssembly |
 | `scripts/` | Servidor local para experimentar a versão online |
 | `desktop/` | Código da versão inicial para Windows, com SQLite local |
+| `desktop-app/` | Nova edição Windows com a interface atual, Google Drive e atualizações pelo GitHub |
 
-**A versão desktop é anterior às alterações mais recentes da versão online.** O cadastro de contas e cartões, o parcelamento e o resumo por conta implementados na versão online ainda precisam ser integrados ao desktop. Nenhum executável Windows é distribuído neste repositório.
+O diretório `desktop/` contém a implementação inicial com SQLite, mantida como histórico. A nova edição está em [`desktop-app/`](desktop-app/README.md) e reutiliza a interface atual, incluindo parcelas, fontes, PDF, personalização e vencimentos. O instalador e o fluxo de atualização estão implementados; a primeira distribuição funcional depende da configuração única de um cliente OAuth Google do tipo App para computador e da validação no Windows. O workflow gera artefatos de teste e bloqueia a publicação de releases sem configuração Google.
 
 ## Executar a versão online localmente
 
@@ -101,7 +102,3 @@ Consulte [GOOGLE_SETUP.md](GOOGLE_SETUP.md) para ativação, limites de salvamen
 
 Testes adicionais: `node tests/profiles-drive.cjs` e `node tests/google-profiles.cjs`. Ambos usam respostas simuladas.
 
-
-## Edição Google Apps Script
-
-Foi preparada uma edição para hospedar o aplicativo no Google e manter uma pasta de dados própria no Drive de cada usuário, sem Client ID manual no navegador. O código fica em [apps-script/](apps-script/README.md), com gerador e testes. A publicação e a validação real desta edição ainda dependem de concluir a autenticação Google e criar a implantação. O endereço GitHub Pages existente continua disponível.
