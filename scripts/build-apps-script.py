@@ -3,12 +3,12 @@
 from pathlib import Path
 import base64,re
 root=Path(__file__).resolve().parents[1];dist=root/'dist';dest=root/'apps-script'
-html=(dist/'index.html').read_text()
+html=(dist/'index.html').read_text(encoding='utf-8')
 html=re.sub(r'<script\b[^>]*\bsrc=["\'][^"\']+["\'][^>]*></script>','',html)
 html=re.sub(r'<link\b[^>]*rel="stylesheet"[^>]*>','',html)
 html=html.replace('<head>','<head><base target="_top">').replace('href="./"','href="#"')
-css=(dist/'style.css').read_text()+'\n.primary,.stat.highlight{color:var(--accent-contrast,#fff)}';html=html.replace('</head>','<style>'+css+'</style></head>')
-app=(dist/'app.js').read_text();app=app[:app.index('function profiles(')]
+css=(dist/'style.css').read_text(encoding='utf-8')+'\n.primary,.stat.highlight{color:var(--accent-contrast,#fff)}';html=html.replace('</head>','<style>'+css+'</style></head>')
+app=(dist/'app.js').read_text(encoding='utf-8');app=app[:app.index('function profiles(')]
 app=re.sub(r'function settings\(\).*?(?=function openEntry)', '', app, flags=re.S)
 app=re.sub(r'function reports\(\).*?(?=function openEntry)', '', app, flags=re.S)
 app=re.sub(r'function csv\(\).*?(?=async function loadDemo)', '', app, flags=re.S)
@@ -22,8 +22,8 @@ app=app.replace("preferences:data.preferences||state.preferences","preferences:d
 app=app.replace("preferences:state.preferences","preferences:state.preferences,reminders:state.reminders")
 app=app.replace("}finally{saving=false}}","}finally{saving=false;dueCheckKey='';checkDueDates()}}")
 bootstrap='const FINANCE_WASM_BASE64='+repr(base64.b64encode((dist/'finance.wasm').read_bytes()).decode())+';\n'
-parts=[bootstrap,(dist/'income-sources.js').read_text(),(dest/'client.js').read_text(),(dist/'currency-input.js').read_text(),(dist/'expense-summary.js').read_text(),app,(dest/'report-filter.js').read_text(),(dest/'view.js').read_text(),(dest/'reminders.js').read_text(),(dest/'reminder-view.js').read_text()]
+parts=[bootstrap,(dist/'income-sources.js').read_text(encoding='utf-8'),(dest/'client.js').read_text(encoding='utf-8'),(dist/'currency-input.js').read_text(encoding='utf-8'),(dist/'expense-summary.js').read_text(encoding='utf-8'),app,(dest/'report-filter.js').read_text(encoding='utf-8'),(dest/'view.js').read_text(encoding='utf-8'),(dest/'reminders.js').read_text(encoding='utf-8'),(dest/'reminder-view.js').read_text(encoding='utf-8')]
 script='\n'.join(parts).replace('</script','<\\/script')
 html=html.replace('</body>','<script>'+script+'</script></body>')
-(dest/'Index.html').write_text(html)
+(dest/'Index.html').write_text(html,encoding='utf-8')
 print(f'Apps Script HTML: {len(html.encode()):,} bytes')
