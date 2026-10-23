@@ -2,7 +2,7 @@
 
 Aplicativo de controle financeiro pessoal, em português, com cálculos em Rust.
 
-[Abrir a versão online privada](https://financa-dos-rapazes-testes.humblespoon513.chatgpt.site)
+[Abrir o aplicativo no GitHub Pages](https://jdantanna.github.io/finan-a-dos-rapazes/)
 
 ## Versão online atual
 
@@ -38,7 +38,7 @@ Requisito: Node.js 18 ou superior.
 node scripts/serve.cjs
 ```
 
-Abra http://localhost:8080 no navegador. Para alterar a porta, defina `PORT`. O endereço de desenvolvimento é local; para acesso remoto, use o link privado acima.
+Abra http://localhost:8080 no navegador. Para alterar a porta, defina `PORT`. O endereço de desenvolvimento é local; para acesso remoto, use o link acima.
 
 ## Compilar o núcleo Rust
 
@@ -85,3 +85,11 @@ Em **Novo lançamento**, escolha **Compra parcelada no crédito**, selecione um 
 
 Uso pessoal. Este repositório não contém dados financeiros reais.
 
+
+## Publicação no GitHub Pages
+
+Site público: https://jdantanna.github.io/finan-a-dos-rapazes/
+
+A publicação utiliza a branch `gh-pages`, pasta `/ (root)`. Ela contém os arquivos de `dist/` na raiz e `.nojekyll`. Alterações em `main` devem ser refletidas nessa branch para atualizar a página. A configuração atual não faz essa cópia automaticamente.
+
+Ao mudar do endereço anterior para o GitHub Pages, exporte seu backup JSON em Configurações no endereço antigo e restaure-o no novo. Cada origem mantém seus próprios dados locais. O repositório e a página são públicos, mas seus lançamentos não são enviados para o GitHub.
