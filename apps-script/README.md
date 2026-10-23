@@ -65,10 +65,10 @@ Em **Relatórios**, selecione o período e escolha **Exportar PDF** ou **Exporta
 
 Validação real: versão 2, nome Rafael Dantanna e PDF de outubro/2026 baixado, aberto e revisado visualmente. A base acessada estava vazia; detalhes preenchidos, centavos, escaping e isolamento foram cobertos em testes simulados. Não foi feito teste real com uma segunda conta.
 
-## Atualização preparada: filtro de fonte de despesa
+## Filtro de fonte de despesa — versão 3 publicada
 
 Em **Relatórios**, o seletor **Lançamentos** permite receitas e despesas ou somente despesas. O seletor **Fonte de despesa (conta ou cartão)** oferece os cadastros e os nomes usados em despesas antigas. Selecionar uma fonte ativa somente despesas dessa fonte; receitas com o mesmo nome são excluídas. O período selecionado continua sendo respeitado. A tabela, os totais, CSV e PDF compartilham o mesmo filtro. O PDF identifica a fonte, inclusive quando não há despesas no período.
 
-Esta atualização está preparada no código, mas não foi publicada no link `/exec`: a sessão do navegador de administração não pôde ser retomada. Para aplicá-la, substitua `Código.gs` pelo conteúdo de `Code.gs`, substitua `Index.html` pelo HTML gerado e use **Implantar → Gerenciar implantações → Editar → Nova versão → Implantar**. As permissões não mudaram. O arquivo `report-filter.js` é fonte do empacotamento e não deve ser adicionado separadamente ao projeto Apps Script.
+Versão 3 publicada em 23/10/2026 na implantação existente, preservando o link `/exec`. O aplicativo real carregou e o filtro Somente despesas foi validado visualmente na base vazia. Para atualizações futuras, substitua `Código.gs` pelo conteúdo de `Code.gs`, substitua `Index.html` pelo HTML gerado e use **Implantar → Gerenciar implantações → Editar → Nova versão → Implantar**. As permissões não mudaram. O arquivo `report-filter.js` é fonte do empacotamento e não deve ser adicionado separadamente ao projeto Apps Script.
 
-Testes adicionais: filtros com várias fontes, receitas homônimas excluídas, centavos, fontes antigas, período vazio e validação do filtro no PDF. Não houve teste desta alteração no Google real.
+Testes adicionais: filtros com várias fontes, receitas homônimas excluídas, centavos, fontes antigas, período vazio e validação do filtro no PDF. A interface foi testada no Google real com base vazia. A verificação do download filtrado não foi concluída nesta sessão; os testes locais de conteúdo PDF/CSV passaram.
