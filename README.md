@@ -17,7 +17,7 @@ Aplicativo de controle financeiro pessoal, em português, com cálculos em Rust.
 - Backup e restauração JSON.
 - Formatação monetária durante a digitação.
 
-Os cálculos executam em Rust compilado para WebAssembly. Os dados desta versão ficam no navegador e dispositivo utilizados. Publicar o código no GitHub não faz backup dos seus lançamentos nem sincroniza dispositivos. Google Drive ainda não está implementado.
+Os cálculos executam em Rust compilado para WebAssembly. Os dados desta versão ficam no navegador e dispositivo utilizados. Publicar o código no GitHub não faz backup dos seus lançamentos nem sincroniza dispositivos. A integração de perfis Google e cópias no Drive está implementada, mas exige configurar um Client ID OAuth e validar login/envio reais. Veja [GOOGLE_SETUP.md](GOOGLE_SETUP.md).
 
 ## Estrutura
 
@@ -79,7 +79,7 @@ Em **Novo lançamento**, escolha **Compra parcelada no crédito**, selecione um 
 ## Limitações atuais
 
 - Os relatórios representam previsões dos lançamentos cadastrados; não há conciliação de pagamentos.
-- A nuvem, a sincronização entre dispositivos e o login Google ainda estão pendentes.
+- Login Google e backup no Drive dependem da configuração OAuth; ainda não foram validados com Google real. Não há mesclagem automática de alterações entre dispositivos.
 - Os relatórios não substituem uma declaração de Imposto de Renda.
 - Backup JSON não é criptografado.
 - Não envie bases financeiras, backups, senhas ou comprovantes para o repositório.
@@ -94,3 +94,10 @@ Site público: https://jdantanna.github.io/finan-a-dos-rapazes/
 A publicação utiliza a branch `gh-pages`, pasta `/ (root)`. Ela contém os arquivos de `dist/` na raiz e `.nojekyll`. Alterações em `main` devem ser refletidas nessa branch para atualizar a página. A configuração atual não faz essa cópia automaticamente.
 
 Ao mudar do endereço anterior para o GitHub Pages, exporte seu backup JSON em Configurações no endereço antigo e restaure-o no novo. Cada origem mantém seus próprios dados locais. O repositório e a página são públicos, mas seus lançamentos não são enviados para o GitHub.
+
+## Perfis Google e revisão
+
+Consulte [GOOGLE_SETUP.md](GOOGLE_SETUP.md) para ativação, limites de salvamento offline e restauração. As três revisões independentes e verificações estão registradas em [CODE_REVIEW_PROFILES.md](CODE_REVIEW_PROFILES.md).
+
+Testes adicionais: `node tests/profiles-drive.cjs` e `node tests/google-profiles.cjs`. Ambos usam respostas simuladas.
+
