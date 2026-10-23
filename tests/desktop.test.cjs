@@ -5,7 +5,7 @@ const fs=require('node:fs/promises');
 const os=require('node:os');
 const path=require('node:path');
 const crypto=require('node:crypto');
-const {GoogleAuth,Vault,validateClient}=require('../desktop-app/src/oauth.cjs');
+const {GoogleAuth,Vault,validateClient,readResponse}=require('../desktop-app/src/oauth.cjs');
 const {FinanceDrive}=require('../desktop-app/src/drive.cjs');
 const {Updates}=require('../desktop-app/src/updates.cjs');
 const {validate,pdfHtml}=require('../desktop-app/generated/shared.cjs');
@@ -48,8 +48,12 @@ test('Renovação é única quando pedidos simultâneos precisam de token',async
 test('Vault criptografa em disco e recusa gravar sem proteção do sistema',async()=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'finance-vault-'));
  const key=crypto.randomBytes(32),iv=crypto.randomBytes(16);
- const cipher={isEncryptionAvailable:()=>true,encryptString:s=>{const c=crypto.createCipheriv('aes-256-ctr',key,iv);return Buffer.concat([c.update(s),c.final()])},decryptString:b=>{const d=crypto.createDecipheriv('aes-256-ctr',key,iv);return Buffer.concat([d.update(b),d.final()]).toString()}};
- try{const vault=new Vault(dir,cipher);await vault.write({refresh_token:'very-private'});assert(!(await fs.readFile(vault.file)).includes(Buffer.from('very-private')));assert.equal((await vault.read()).refresh_token,'very-private');await vault.clear();assert.deepEqual(await vault.read(),{});await assert.rejects(()=>new Vault(dir,{isEncryptionAvailable:()=>false}).write({}),/não está disponível/);}finally{await fs.rm(dir,{recursive:true,force:true})}
+ const cipher={isAsyncEncryptionAvailable:async()=>true,encryptStringAsync:async s=>{const c=crypto.createCipheriv('aes-256-ctr',key,iv);return Buffer.concat([c.update(s),c.final()])},decryptStringAsync:async b=>{const d=crypto.createDecipheriv('aes-256-ctr',key,iv);return {result:Buffer.concat([d.update(b),d.final()]).toString(),shouldReEncrypt:false}}};
+ try{const vault=new Vault(dir,cipher);await vault.write({refresh_token:'very-private'});assert(!(await fs.readFile(vault.file)).includes(Buffer.from('very-private')));assert.equal((await vault.read()).refresh_token,'very-private');await vault.clear();assert.deepEqual(await vault.read(),{});await assert.rejects(()=>new Vault(dir,{isAsyncEncryptionAvailable:async()=>false}).write({}),/não está disponível/);}finally{await fs.rm(dir,{recursive:true,force:true})}
+});
+test('Leitura interrompe respostas grandes antes de carregar todo o arquivo',async()=>{
+ let cancelled=false;const response=new Response(new ReadableStream({pull(controller){controller.enqueue(new Uint8Array(1_000_000))},cancel(){cancelled=true}}));
+ await assert.rejects(()=>readResponse(response),/limite de tamanho/);assert.equal(cancelled,true);
 });
 function driveFixture({etag='"etag-1"',patchStatus=200,owner=PROFILE.email}={}){
  let current={schema:3,owner,revision:'revision-1',savedAt:'2026-10-23T12:00:00Z',state:EMPTY},writes=0,backups=0;

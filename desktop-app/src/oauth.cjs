@@ -12,13 +12,15 @@ function validateClient(raw){
 }
 class Vault{
  constructor(directory,safeStorage){this.file=path.join(directory,'google-session.enc');this.safe=safeStorage;}
- async read(){try{return JSON.parse(this.safe.decryptString(await fs.readFile(this.file)))}catch(e){if(e.code==='ENOENT')return {};throw Error('Não foi possível abrir as credenciais locais. Use Sair e conecte novamente.');}}
- async write(value){if(!this.safe.isEncryptionAvailable())throw Error('A proteção de credenciais do sistema não está disponível.');await fs.mkdir(path.dirname(this.file),{recursive:true});const temp=this.file+'.tmp';await fs.writeFile(temp,this.safe.encryptString(JSON.stringify(value)),{mode:0o600});await fs.rename(temp,this.file);}
+ async read(){try{const decrypted=await this.safe.decryptStringAsync(await fs.readFile(this.file));const value=JSON.parse(decrypted.result);if(decrypted.shouldReEncrypt)await this.write(value);return value;}catch(e){if(e.code==='ENOENT')return {};throw Error('Não foi possível abrir as credenciais locais. Use Sair e conecte novamente.');}}
+ async write(value){if(!await this.safe.isAsyncEncryptionAvailable())throw Error('A proteção de credenciais do sistema não está disponível.');await fs.mkdir(path.dirname(this.file),{recursive:true});const temp=this.file+'.tmp';await fs.writeFile(temp,await this.safe.encryptStringAsync(JSON.stringify(value)),{mode:0o600});await fs.rename(temp,this.file);}
  async clear(){await fs.rm(this.file,{force:true});}
 }
 async function readResponse(response){
  if(!response.ok){if(response.status===412)throw Error('CONFLICT: outro dispositivo alterou os dados. Recarregue do Drive antes de salvar.');if(response.status===401)throw Error('Sua autorização Google expirou. Saia e conecte novamente.');throw Error('Não foi possível acessar o Google (HTTP '+response.status+'). Nenhum salvamento foi confirmado.');}
- const text=await response.text();if(Buffer.byteLength(text)>4_100_000)throw Error('Resposta excede o limite de tamanho.');return text?JSON.parse(text):{};
+ const reader=response.body?.getReader();if(!reader)return {};const chunks=[];let size=0;
+ try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>4_100_000){await reader.cancel();throw Error('Resposta excede o limite de tamanho.');}chunks.push(value);}}finally{reader.releaseLock();}
+ const text=Buffer.concat(chunks).toString('utf8');return text?JSON.parse(text):{};
 }
 class GoogleAuth{
  constructor({vault,client,openExternal,fetchImpl=fetch}){Object.assign(this,{vault,client,openExternal,fetchImpl});this.session=null;this.pending=null;}
@@ -37,14 +39,14 @@ class GoogleAuth{
  async login(){
   const verifier=crypto.randomBytes(48).toString('base64url'),state=crypto.randomBytes(32).toString('base64url');
   const challenge=crypto.createHash('sha256').update(verifier).digest('base64url');
-  const server=http.createServer();let timer;
+  const server=http.createServer({requestTimeout:10_000,headersTimeout:10_000,maxHeaderSize:8192});let timer;
   try{
    await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)});
    const redirect='http://127.0.0.1:'+server.address().port+'/oauth/callback';
    const codePromise=new Promise((resolve,reject)=>{
     timer=setTimeout(()=>reject(Error('A autorização expirou. Clique em conectar para tentar novamente.')),180_000);
     server.on('request',(req,res)=>{
-     const url=new URL(req.url,redirect);
+     let url;try{url=new URL(req.url,redirect)}catch{res.writeHead(400);res.end('Solicitacao invalida.');return;}
      if(req.method!=='GET'||url.pathname!=='/oauth/callback'||url.searchParams.get('state')!==state){res.writeHead(400);res.end('Solicitacao invalida.');return;}
      res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'"});res.end('Você pode fechar esta aba e voltar ao aplicativo.');
      if(url.searchParams.has('error'))reject(Error('A autorização não foi concedida. Seus dados não foram alterados.'));

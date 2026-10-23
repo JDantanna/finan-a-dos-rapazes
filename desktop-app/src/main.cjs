@@ -58,7 +58,7 @@ else {
   win.webContents.on('will-attach-webview',event=>event.preventDefault());
   session.defaultSession.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
   session.defaultSession.on('will-download',(_event,item)=>{item.setSaveDialogOptions({defaultPath:path.join(app.getPath('downloads'),path.basename(item.getFilename()))});});
-  win.on('close',event=>{if(drive?.busy||loggingIn){event.preventDefault();dialog.showMessageBox(win,{message:'Aguarde a operação com o Google terminar antes de fechar.'});}});
+  win.on('close',event=>{if(drive?.busy){event.preventDefault();dialog.showMessageBox(win,{message:'Aguarde o salvamento no Google Drive terminar antes de fechar.'});}});
   updates=new Updates({updater:autoUpdater,dialog,app,window:()=>win,isBusy:()=>!!drive?.busy||loggingIn});installIPC();
   await win.loadFile(page('ui/login.html'));win.show();
   if(await config())try{await login(false)}catch{/* Keep login available; never write an empty local state. */}
