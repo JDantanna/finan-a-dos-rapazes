@@ -111,7 +111,7 @@ function validState_(state) {
   ids.clear();
   state.goals.forEach(function(g) { if (!g || !text(g.id,200) || ids.has(g.id) || !text(g.name,200) || !cents(g.target) || !Number.isSafeInteger(g.saved) || g.saved < 0 || g.saved > g.target || !date(g.deadline)) throw new Error('Confira os campos das metas.'); ids.add(g.id); });
   function registry(items,accounts) { if (!Array.isArray(items) || items.length > 1000) throw new Error('Cadastro inválido.'); const names = new Set(), keys = new Set(); items.forEach(function(item) { const name = item && typeof item.name === 'string' ? item.name.trim().normalize('NFC').toLowerCase() : ''; if (!item || !text(item.id,200) || keys.has(item.id) || !text(item.name,120) || names.has(name) || (accounts && ['checking','credit','benefit','cash','other'].indexOf(item.type)<0)) throw new Error('Cadastro inválido ou duplicado.'); names.add(name); keys.add(item.id); }); return items; }
-  const clean = {entries:state.entries,goals:state.goals,accounts:registry(state.accounts||[],true),incomeSources:registry(state.incomeSources||[],false),demo:!!state.demo,preferences:validPreferences_(state.preferences)};
+  const clean = {entries:state.entries,goals:state.goals,accounts:registry(state.accounts||[],true),incomeSources:registry(state.incomeSources||[],false),demo:!!state.demo,preferences:validPreferences_(state.preferences),reminders:validReminders_(state.reminders)};
   jsonBlob_(clean,'validation.json');return clean;
 }
 
@@ -156,8 +156,16 @@ function reportPdfHtml_(p, name) {
 function validPreferences_(value) {
   if(value==null)return {color:'#287560',userName:'',appTitle:''};
   if(typeof value!=='object'||Array.isArray(value))throw new Error('Personalização inválida.');
-  const result={color:value.color??'#287560',userName:value.userName??'',appTitle:value.appTitle??''};
+  const result={color:value.color??'#287560',userName:value.userName??'',appTitle:value.appTitle??'',reminderEnabled:value.reminderEnabled??true,reminderDays:value.reminderDays??3};
   if(typeof result.color!=='string'||!/^#[0-9a-f]{6}$/i.test(result.color))throw new Error('Cor inválida.');
   ['userName','appTitle'].forEach(function(key){if(typeof result[key]!=='string'||result[key].trim().length>80)throw new Error('Use até 80 caracteres no nome e título.');result[key]=result[key].trim();});
+  if(typeof result.reminderEnabled!=='boolean'||![0,1,3,7].includes(result.reminderDays))throw new Error('Configuração de avisos inválida.');
   return result;
+}
+
+function validReminders_(value){
+ if(value==null)return {dismissed:[]};
+ if(typeof value!=='object'||!Array.isArray(value.dismissed)||value.dismissed.length>1000)throw new Error('Avisos inválidos.');
+ value.dismissed.forEach(function(key){if(typeof key!=='string'||key.length>500)throw new Error('Aviso inválido.');const parts=JSON.parse(key);if(!Array.isArray(parts)||parts.length!==2||typeof parts[0]!=='string'||!parts[0]||typeof parts[1]!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(parts[1]))throw new Error('Aviso inválido.');});
+ return {dismissed:Array.from(new Set(value.dismissed))};
 }

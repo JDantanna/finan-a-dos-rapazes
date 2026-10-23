@@ -51,3 +51,9 @@ const preserved=context.listFinanceBackups(a.profile.sub).find(file=>JSON.parse(
 context.restoreFinanceBackup(preserved.id,context.loadFinance().revision,'preferences-restore',a.profile.sub);
 assert.equal(context.loadFinance().state.preferences.userName,'Rafael Campo');
 console.log('10. Preferências persistem por conta, aceitam padrões e restauração; cores inválidas e textos longos são rejeitados.');
+const reminderState={...context.loadFinance().state,reminders:{dismissed:[JSON.stringify(['monthly','2026-10-23'])]},preferences:{...context.loadFinance().state.preferences,reminderEnabled:true,reminderDays:7}};
+context.saveFinance(reminderState,context.loadFinance().revision,'reminders-save',a.profile.sub);
+assert.equal(context.loadFinance().state.reminders.dismissed.length,1);assert.equal(context.loadFinance().state.preferences.reminderDays,7);
+active=effective='b@example.test';assert.equal(context.loadFinance().state.reminders.dismissed.length,0);active=effective='a@example.test';
+assert.throws(()=>context.validPreferences_({reminderDays:999}),/avisos/);assert.throws(()=>context.validReminders_({dismissed:['invalid']}));
+console.log('11. Avisos dispensados persistem isolados por conta; antecedência e formato são validados.');

@@ -17,8 +17,12 @@ app=app.replace('Entre com Google para separar seus dados e salvar cópias no Dr
 app=app.replace("accounts:state.accounts||[],incomeSources:state.incomeSources||[]","accounts:state.accounts||[],incomeSources:state.incomeSources||[],preferences:state.preferences")
 app=app.replace("incomeSources:state.incomeSources||[],accounts:state.accounts||[],demo:true","incomeSources:state.incomeSources||[],accounts:state.accounts||[],preferences:state.preferences,demo:true")
 app=app.replace("demo:!!data.demo});","demo:!!data.demo,preferences:data.preferences||state.preferences});")
+app=app.replace("updateEntryFields();$('#entry-title')","updateEntryFields();updateDueDateLabel();$('#entry-title')")
+app=app.replace("preferences:data.preferences||state.preferences","preferences:data.preferences||state.preferences,reminders:data.reminders||state.reminders")
+app=app.replace("preferences:state.preferences","preferences:state.preferences,reminders:state.reminders")
+app=app.replace("}finally{saving=false}}","}finally{saving=false;dueCheckKey='';checkDueDates()}}")
 bootstrap='const FINANCE_WASM_BASE64='+repr(base64.b64encode((dist/'finance.wasm').read_bytes()).decode())+';\n'
-parts=[bootstrap,(dist/'income-sources.js').read_text(),(dest/'client.js').read_text(),(dist/'currency-input.js').read_text(),(dist/'expense-summary.js').read_text(),app,(dest/'report-filter.js').read_text(),(dest/'view.js').read_text()]
+parts=[bootstrap,(dist/'income-sources.js').read_text(),(dest/'client.js').read_text(),(dist/'currency-input.js').read_text(),(dist/'expense-summary.js').read_text(),app,(dest/'report-filter.js').read_text(),(dest/'view.js').read_text(),(dest/'reminders.js').read_text(),(dest/'reminder-view.js').read_text()]
 script='\n'.join(parts).replace('</script','<\\/script')
 html=html.replace('</body>','<script>'+script+'</script></body>')
 (dest/'Index.html').write_text(html)

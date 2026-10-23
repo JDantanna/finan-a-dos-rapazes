@@ -80,3 +80,13 @@ Em Configurações, a seção Personalização permite escolher a cor principal,
 O botão Restaurar aparência padrão limpa as personalizações após confirmação do salvamento no Drive. As cores de destaque usam texto preto ou branco conforme a luminosidade. Os campos de texto têm limite de 80 caracteres; a cor usa hexadecimal com seis dígitos.
 
 Validação: dez grupos Apps Script passaram, incluindo persistência, separação de contas, restauração e entrada inválida. O HTML gerado foi validado sintaticamente. Versão 4 publicada em 23/10/2026 na implantação existente. Os campos de personalização, o salvamento no Drive e a persistência após recarga foram confirmados no Google real. Um conflito entre abas foi bloqueado; a versão mais recente foi recarregada e preservada. A identidade Google, permissões e link de acesso não mudaram.
+
+## Vencimentos e avisos — versão 6 publicada
+
+Ao cadastrar ou editar um lançamento recorrente, informe **Primeiro vencimento** e **Repetição**. A data é a referência de cada cobrança/recebimento da série. Em meses sem aquele dia, o núcleo Rust usa o último dia do mês. **Repetir até** é o encerramento opcional da série, não o vencimento da próxima ocorrência.
+
+O menu **Vencimentos** lista as ocorrências recorrentes de hoje até a antecedência configurada. O padrão é três dias, com opções de zero, um, três ou sete dias em **Configurações → Avisos de vencimento**. O popup automático aparece para os vencimentos de hoje, uma vez por sessão. A checagem ocorre ao carregar, após salvar, ao retornar à aba e a cada minuto com a página visível. Aguarda outros diálogos para evitar interromper formulários.
+
+**Dispensar este aviso** persiste apenas a ocorrência identificada por lançamento e data, isolada por conta. Não equivale a confirmar pagamento nem oculta o próximo vencimento. O aplicativo não concilia pagamentos, não classifica valores como inadimplentes e não envia notificações com a página fechada. Lançamentos únicos e parcelas independentes não entram neste painel de recorrências.
+
+Validação: onze grupos de servidor Apps Script, testes de calendário com o WASM real e testes do comportamento do popup passaram. Na versão publicada, o formulário recorrente, opções de antecedência e popup manual vazio foram conferidos. Não foram criados lançamentos fictícios na conta para testar vencimentos automáticos reais.
