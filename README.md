@@ -101,3 +101,7 @@ Consulte [GOOGLE_SETUP.md](GOOGLE_SETUP.md) para ativação, limites de salvamen
 
 Testes adicionais: `node tests/profiles-drive.cjs` e `node tests/google-profiles.cjs`. Ambos usam respostas simuladas.
 
+
+## Edição Google Apps Script
+
+Foi preparada uma edição para hospedar o aplicativo no Google e manter uma pasta de dados própria no Drive de cada usuário, sem Client ID manual no navegador. O código fica em [apps-script/](apps-script/README.md), com gerador e testes. A publicação e a validação real desta edição ainda dependem de concluir a autenticação Google e criar a implantação. O endereço GitHub Pages existente continua disponível.

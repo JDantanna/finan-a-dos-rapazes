@@ -1,0 +1,8 @@
+{
+  "timeZone": "America/Sao_Paulo",
+  "runtimeVersion": "V8",
+  "exceptionLogging": "NONE",
+  "dependencies": {"enabledAdvancedServices": [{"userSymbol": "Drive", "version": "v3", "serviceId": "drive"}]},
+  "oauthScopes": ["https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/script.external_request"],
+  "webapp": {"executeAs": "USER_ACCESSING", "access": "ANYONE"}
+}
