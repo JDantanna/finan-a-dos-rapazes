@@ -1,0 +1,11 @@
+**/target/
+node_modules/
+.openai/
+.env
+.env.*
+*.sqlite
+*.sqlite-*
+*.db
+*.exe
+*-backup-*.json
+.DS_Store

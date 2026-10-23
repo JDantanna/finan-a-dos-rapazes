@@ -84,3 +84,4 @@ Em **Novo lançamento**, escolha **Compra parcelada no crédito**, selecione um 
 - Não envie bases financeiras, backups, senhas ou comprovantes para o repositório.
 
 Uso pessoal. Este repositório não contém dados financeiros reais.
+
