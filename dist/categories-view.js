@@ -1,7 +1,7 @@
 'use strict';
 function categoryBadge(name){const c=Categories.appearance(state,name);return `<span class="tag category-badge" style="border-left:4px solid ${c.color};background:${c.color}16;color:var(--ink,#243344)"><span aria-hidden="true">${esc(c.symbol)}</span> ${esc(name)}</span>`;}
 function categories(){const items=Categories.validate(state.categories);return `<section class="card"><div class="card-head"><div><h2>Suas categorias</h2><p>Escolha um símbolo e uma cor para identificar receitas e despesas.</p></div><button class="primary" data-new-category>+ Nova categoria</button></div><div class="category-cards">${items.map(c=>`<article class="category-item">${categoryBadge(c.name)}<div class="actions"><button data-edit-category="${esc(c.id)}">Editar</button><button data-delete-category="${esc(c.id)}">Excluir</button></div></article>`).join('')||'<p>Nenhuma categoria cadastrada. Os lançamentos antigos continuam preservados.</p>'}</div></section>`;}
-function openCategory(id){const f=$('#category-form');f.querySelector('.form-message')?.remove();f.reset();const c=Categories.validate(state.categories).find(c=>c.id===id);f.elements.id.value=c?.id||'';f.elements.name.value=c?.name||'';f.elements.symbol.value=c?.symbol||'🏷️';f.elements.color.value=c?.color||'#4876b8';$('#category-title').textContent=c?'Editar categoria':'Nova categoria';$('#category-dialog').showModal();}
+function openCategory(id){const f=$('#category-form');f.querySelector('.form-message')?.remove();f.reset();const c=Categories.validate(state.categories).find(c=>c.id===id);f.elements.id.value=c?.id||'';f.elements.name.value=c?.name||'';f.elements.symbol.value=c?.symbol||'🏷️';f.elements.color.value=c?.color||'#4876b8';$('#category-title').textContent=c?'Editar categoria':'Nova categoria';$('#category-emojis').open=false;$('#emoji-search').value='';paintEmojis();$('#category-dialog').showModal();}
 function updateCategoryOptions(){const input=$('#entry-form').elements.category;input.removeAttribute('list');input.readOnly=false;input.disabled=false;hideCategoryChoices();}
 let categoryChoiceIndex=-1,categoryChoices=[];
 const categoryInput=$('#entry-form').elements.category;
@@ -20,3 +20,29 @@ clearCategory.addEventListener('click',()=>{categoryInput.value='';categoryInput
 $('#entry-form').addEventListener('reset',hideCategoryChoices);
 document.addEventListener('click',safe(async e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-new-category'))openCategory();if(b.dataset.editCategory)openCategory(b.dataset.editCategory);if(b.dataset.deleteCategory&&confirm('Excluir a categoria do cadastro? Os lançamentos existentes serão mantidos.'))await save(Categories.remove(state,b.dataset.deleteCategory));}));
 $('#category-form').onsubmit=safe(async e=>{e.preventDefault();const f=e.target;await save(Categories.upsert(state,{id:f.elements.id.value||newId(),name:f.elements.name.value,symbol:f.elements.symbol.value,color:f.elements.color.value}));updateCategoryOptions();$('#category-dialog').close();});
+
+// Kept in the view: the catalog never adds size to user backups or Drive data.
+const emojiGroups=[
+ ['Dinheiro e finanças banco cartão investimento salário receita imposto conta', '💰 💵 💴 💶 💷 💸 💳 🪙 🏦 🏧 💹 📈 📉 📊 🧾 🧮 💲 🤑 💎 ⚖️ 🏷️ 🎯 🐷 💼'],
+ ['Casa e moradia aluguel condomínio construção reforma limpeza móveis', '🏠 🏡 🏘️ 🏢 🏗️ 🧱 🏚️ 🏰 🛖 🚪 🪟 🛋️ 🪑 🛏️ 🛁 🚿 🚽 🪠 🧹 🧺 🧽 🪣 🧴 🧼 🧻 🪴 🔑 🗝️ 🛠️ 🔨 🪛 🔧 🪚 🪜 🧰 💡 🔌 🔋 ⚡ 💧 🔥'],
+ ['Comida e alimentação mercado restaurante café bebida frutas lanche', '🍽️ 🍴 🥄 🔪 🛒 🛍️ 🍞 🥖 🥐 🥯 🧀 🥚 🍳 🥓 🥩 🍗 🍖 🍔 🍟 🍕 🌭 🥪 🌮 🌯 🥙 🥗 🍝 🍜 🍲 🍛 🍣 🍤 🦞 🦀 🐟 🍚 🫘 🥔 🥕 🌽 🥦 🥬 🥑 🍅 🥒 🍄 🍎 🍏 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🫐 🍒 🍍 🥭 🥥 🍑 🥝 🍰 🎂 🧁 🍫 🍬 🍭 🍯 🍦 🍿 🥜 ☕ 🫖 🍵 🧋 🥤 🧃 🥛 🍼 🍺 🍻 🍷 🍸 🍹 🥂 🍾 🧊'],
+ ['Transporte e viagem carro moto gasolina combustível manutenção campo hotel', '🚗 🚕 🚙 🚌 🚎 🚐 🚑 🚒 🚓 🚚 🚛 🚜 🏍️ 🛵 🚲 🛴 🛞 ⛽ 🛢️ 🅿️ 🚦 🛣️ 🛤️ 🚂 🚆 🚇 🚊 🚝 ✈️ 🛫 🛬 🚁 🚀 🛸 🚢 ⛴️ ⛵ 🚤 🛶 ⚓ 🧳 🎒 🗺️ 🧭 🏨 🏕️ ⛺ 🏖️ 🏝️ 🏔️ 🌋 🗽 🗼 🎡 🎢 🎠 🛂 🛃 🎫'],
+ ['Saúde e cuidados medicina hospital farmácia exercício beleza higiene', '❤️ 💚 💙 💜 🩷 🩺 💊 💉 🩹 🩼 🩻 🏥 🚑 🦷 🪥 🧠 🫀 🫁 🩸 🌡️ 🧬 🧪 🔬 😷 🤒 🤕 🥼 👓 🕶️ 🦻 🦽 🦼 🧘 🏋️ 💪 🏃 🚶 🏊 🚴 ⚽ 🏀 🏐 🎾 🏓 🏸 🥊 🥋 ⛳ 🏄 🎿 🛹 🛼 💄 💅 💇 🪒 🧴 🧖'],
+ ['Trabalho e estudos educação escola curso livros escritório tecnologia assinatura', '💼 🧑‍💻 👷 🧑‍🏫 🧑‍🍳 🧑‍🔧 🧑‍🌾 🎓 🏫 📚 📖 📕 📗 📘 📙 📓 📒 📝 ✏️ 🖊️ 🖋️ 🖌️ 🖍️ 📐 📏 ✂️ 📎 🖇️ 📌 📍 📁 📂 🗂️ 🗃️ 🗄️ 🗑️ 🗓️ 📅 ⏰ ⌛ ⏳ 📋 📜 📑 📰 🗞️ 💻 🖥️ 🖨️ ⌨️ 🖱️ 📱 ☎️ 📞 📟 📠 📡 📶 🌐 🛜 📷 📸 📹 🎥 🎬 🎙️ 🎧 📺 📻 🔊 🔒 🔓 🛡️ ⚙️ 🤖'],
+ ['Lazer e diversão arte cultura música cinema jogo esporte festa presente', '🎮 🕹️ 🎲 🧩 ♟️ 🃏 🀄 🎴 🎨 🖼️ 🎭 🎪 🎟️ 🎫 🎤 🎵 🎶 🎼 🎹 🎸 🥁 🎷 🎺 🎻 🪕 🪈 🪇 🪩 🪁 🎣 🏹 🎳 🏆 🥇 🥈 🥉 🏅 🎊 🎉 🎈 🎁 🎀 🎄 🎃 🧨 🎆 🎇 🕯️ 🧸 🪀 🪆 🫧'],
+ ['Família e roupas compras bebê criança amigos relacionamento doação', '👨‍👩‍👧 👨‍👩‍👦 🧑 👩 👨 👶 🧒 🧓 👵 👴 🤝 🫶 🙏 🤗 😊 😎 🥳 😍 💌 💕 💖 💝 💍 💐 🍼 🧷 👕 👔 👗 👖 🩳 👚 🧥 🧣 🧤 🧦 👟 👞 👠 👢 🩴 🎩 🧢 👒 👑 👜 👛 👝 🎒 👛 ⌚ 💎'],
+ ['Animais pets natureza jardim plantas clima sustentabilidade', '🐾 🐶 🐕 🐩 🦮 🐱 🐈 🐹 🐭 🐰 🐇 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🦆 🐔 🐣 🦜 🐦 🦉 🐧 🐢 🦎 🐍 🐠 🐡 🐬 🐳 🦈 🐙 🦋 🐝 🐞 🐜 🐌 🦔 🐴 🦄 🐑 🐐 🦙 🐘 🦒 🦓 🦌 🌱 🌿 🍀 🌵 🌳 🌴 🌲 🌷 🌹 🌻 🌼 🌺 🌸 🍁 🍂 🍃 🌍 🌎 🌏 ☀️ 🌙 ⭐ 🌟 🌈 ☁️ 🌧️ ❄️ ☃️ ♻️'],
+ ['Organização e diversos prioridade alerta meta favorito símbolos', '✅ ☑️ ✔️ ❌ ➕ ➖ ✖️ ➗ ❓ ❗ ‼️ ⚠️ 🚨 🔔 🔕 📢 📣 🔎 🔍 🧿 🪬 🪄 ✨ 💫 🎯 🚩 🏁 🏳️ 🏴 🇧🇷 🔴 🟠 🟡 🟢 🔵 🟣 🟤 ⚫ ⚪ 🟩 🟦 🟪 🔶 🔷 ♠️ ♥️ ♦️ ♣️ ♾️ 🔄 🔁 🔃 ⬆️ ⬇️ ➡️ ⬅️']
+];
+function paintEmojis(){
+ const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
+ const query=normalize($('#emoji-search').value.trim());let count=0;const used=new Set();
+ $('#emoji-options').innerHTML=emojiGroups.map(([name,symbols])=>{
+  const match=normalize(name).includes(query);const items=[...new Set(symbols.split(' '))].filter(symbol=>!used.has(symbol)&&(match||symbol.includes(query)));
+  items.forEach(symbol=>used.add(symbol));count+=items.length;
+  return items.length?`<section><h3>${esc(name.split(' ').slice(0,4).join(' '))}</h3><div class="emoji-grid">${items.map(symbol=>`<button type="button" data-emoji="${esc(symbol)}" aria-label="Usar ${esc(symbol)}" title="${esc(symbol)}">${esc(symbol)}</button>`).join('')}</div></section>`:'';
+ }).join('');$('#emoji-count').textContent=count?count+' símbolos disponíveis. Você também pode digitar ou colar outro emoji.':'Nenhum símbolo encontrado. Tente outro tema ou cole seu próprio emoji.';
+}
+$('#emoji-search').addEventListener('input',paintEmojis);
+$('#emoji-search').addEventListener('keydown',e=>{if(e.key==='Enter')e.preventDefault();});
+$('#emoji-options').addEventListener('click',e=>{const b=e.target.closest('[data-emoji]');if(!b)return;const input=$('#category-form').elements.symbol;input.value=b.dataset.emoji;input.dispatchEvent(new Event('input',{bubbles:true}));$('#category-emojis').open=false;input.focus();});

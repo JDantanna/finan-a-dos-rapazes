@@ -1,6 +1,6 @@
 {
   "name": "financa-dos-rapazes-desktop",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "Controle financeiro pessoal conectado ao seu Google Drive",
   "author": "JDantanna",
@@ -31,18 +31,22 @@
       "ui/**",
       "generated/**",
       "oauth-client.json",
-      "package.json"
+      "package.json",
+      "assets/**"
     ],
     "win": {
       "target": "nsis",
-      "artifactName": "Financa-dos-Rapazes-${version}-Windows-${arch}.${ext}"
+      "artifactName": "Financa-dos-Rapazes-${version}-Windows-${arch}.${ext}",
+      "icon": "assets/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "deleteAppDataOnUninstall": false,
-      "createDesktopShortcut": true
+      "createDesktopShortcut": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
     },
     "publish": [
       {

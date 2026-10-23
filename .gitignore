@@ -12,3 +12,5 @@ node_modules/
 desktop-app/release/
 desktop-app/generated/
 desktop-app/oauth-client.json
+
+desktop-app/assets/

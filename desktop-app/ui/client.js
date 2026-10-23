@@ -10,7 +10,7 @@ const GoogleProfiles={
  async loadHistory(){if(scriptBusy)throw Error('Aguarde o salvamento local.');await scriptLoad();scriptHistory=await scriptRpc('listFinanceBackups',scriptRecord.profile.sub);scriptNotify();},
  async restore(id){if(scriptBusy)throw Error('Aguarde o salvamento local.');scriptBusy=true;try{const result=await scriptRpc('restoreFinanceBackup',id,scriptRecord.revision,newId(),scriptRecord.profile.sub);scriptRecord=result;scriptLoading=Promise.resolve(result);updateSync(result.localSync);document.dispatchEvent(new CustomEvent('finance:profile-change'));}finally{scriptBusy=false;scriptNotify();}}
 };
-function hasLocalDraft(){return !!document.querySelector('dialog[open], main form[data-local-draft="true"]');}
+function hasLocalDraft(){return !!document.querySelector('dialog[open]:not(.update-dialog), main form[data-local-draft="true"]');}
 for(const event of ['input','change'])document.addEventListener(event,e=>{const form=e.target.closest('form');if(form)form.dataset.localDraft='true';});
 document.addEventListener('reset',e=>{if(e.target.matches('form'))delete e.target.dataset.localDraft;});
 async function refreshLocalCopy(){if(scriptBusy||saving||hasLocalDraft())return;const account=scriptRecord?.profile.sub,result=await scriptRpc('loadFinance');if(account&&account!==result.profile.sub)return;scriptRecord=result;scriptLoading=Promise.resolve(result);updateSync(result.localSync);state=result.state;state.accounts||=[];state.incomeSources||=[];dueCheckKey='';await refresh();}

@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 """Reuse the deployed interface and pure validators; never fork financial logic."""
 from pathlib import Path
-import re, subprocess, sys
+import re, subprocess, sys, base64, struct
 root = Path(__file__).resolve().parents[1]
 subprocess.run([sys.executable, str(root/'scripts/build-apps-script.py')], check=True)
 out = root/'desktop-app/generated'
 out.mkdir(exist_ok=True)
+assets=root/'desktop-app/assets'
+assets.mkdir(exist_ok=True)
+png=base64.b64decode((root/'desktop-app/artwork/icon.png.b64').read_text(encoding='ascii'),validate=False)
+(assets/'icon.png').write_bytes(png)
+# ICO supports embedded PNG images. Zero width/height denotes 256 pixels.
+(assets/'icon.ico').write_bytes(struct.pack('<HHH',0,1,1)+struct.pack('<BBBBHHII',0,0,0,0,1,32,len(png),22)+png)
+
 html = (root/'apps-script/Index.html').read_text(encoding='utf-8')
 script = re.search(r'<script>(.*?)</script>', html, re.S).group(1)
 script = script.replace('<\\/script', '</script')
@@ -23,8 +30,9 @@ script = script.replace('Google Drive · Cada pessoa usa a própria conta e a pr
 script = script.replace('Cada salvamento confirmado grava os dados no seu Google Drive. Uma cópia da versão anterior é mantida na mesma pasta.', 'Cada salvamento grava a cópia local. O Drive recebe as alterações em segundo plano, a cada cinco minutos, mantendo uma cópia anterior.')
 script = script.replace('Preferências desta conta, salvas no seu Google Drive.', 'Preferências desta conta, salvas no computador e sincronizadas com seu Drive.')
 script = script.replace('Restaurar esta cópia no seu Drive? A versão atual será preservada como backup.', 'Restaurar esta cópia no computador? Ela será enviada ao Drive na próxima sincronização.')
+script += '\n' + (root/'desktop-app/ui/update-view.js').read_text(encoding='utf-8')
 script += '\n' + (root/'desktop-app/ui/desktop-view.js').read_text(encoding='utf-8')
-css = re.search(r'<style>(.*?)</style>', html, re.S).group(1)
+css = re.search(r'<style>(.*?)</style>', html, re.S).group(1) + '\n' + (root/'desktop-app/ui/update-view.css').read_text(encoding='utf-8')
 html = re.sub(r'<style>.*?</style>', '<link rel="stylesheet" href="app.css">', html, flags=re.S)
 html = re.sub(r'<script>.*?</script>', '<script src="app.js"></script>', html, flags=re.S)
 html = html.replace('<base target="_top">', '')

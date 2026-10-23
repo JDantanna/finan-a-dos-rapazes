@@ -3,7 +3,7 @@ settings=function(){return `<section class="card settings-block"><h2>Aplicativo 
 document.addEventListener('click',safe(async e=>{
  const button=e.target.closest('[data-desktop]');if(!button)return;
  if(button.dataset.desktop==='update'){
-  button.disabled=true;try{const result=await window.desktop.checkUpdate();const status=document.querySelector('#desktop-update-status');if(status)status.textContent=result.message;}finally{button.disabled=false;}
+  await window.UpdateView.open();
  }
  if(button.dataset.desktop==='logout'&&confirm('Sair desta conta? Seus dados continuarão no seu Drive.')){if(saving||scriptBusy)throw Error('Aguarde o salvamento terminar.');await window.desktop.logout();}
 }));

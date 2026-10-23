@@ -44,7 +44,7 @@ function installIPC(){
   const result=await dialog.showOpenDialog(win,{title:'Cliente OAuth Google — App para computador',properties:['openFile'],filters:[{name:'JSON',extensions:['json']}]});
   if(result.canceled)return;const content=await fs.readFile(result.filePaths[0],'utf8');if(Buffer.byteLength(content)>20_000)throw Error('Configuração muito grande.');const client=validateClient(JSON.parse(content));await fs.mkdir(app.getPath('userData'),{recursive:true});await fs.writeFile(clientFile(),JSON.stringify({installed:client}),{mode:0o600});
  });
- handle('update',()=>updates.check());
+ handle('update',(action='check')=>{switch(action){case 'status':return updates.status();case 'check':return updates.check();case 'download':return updates.download();case 'install':return updates.install();default:throw Error('Operação de atualização não permitida.');}});
  handle('rpc',async(method,args)=>{
   if(!local)throw Error('Conecte sua conta Google.');if(!Array.isArray(args)||Buffer.byteLength(JSON.stringify(args))>4_100_000)throw Error('Dados excedem o limite.');
   switch(method){case'loadFinance':return local.loadFinance();case'saveFinance':return local.saveFinance(...args);case'listFinanceBackups':return local.listFinanceBackups(...args);case'restoreFinanceBackup':return local.restoreFinanceBackup(...args);case'openLocalFolder':{const directory=path.dirname(local.storage.file);await fs.mkdir(directory,{recursive:true});const error=await shell.openPath(directory);if(error)throw Error('Não foi possível abrir a pasta local.');return{ok:true};}case'syncStatus':return local.status();case'syncNow':return local.synchronize();case'resolveConflict':return local.resolveConflict(...args);case'exportFinancePdf':return exportPDF(...args);default:throw Error('Operação não permitida.');}
@@ -54,14 +54,14 @@ if(!app.requestSingleInstanceLock())app.quit();
 else {
  app.on('second-instance',()=>{if(win){if(win.isMinimized())win.restore();win.focus();}});
  app.whenReady().then(async()=>{
-  win=new BrowserWindow({width:1360,height:900,minWidth:860,minHeight:650,show:false,autoHideMenuBar:true,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}});
+  win=new BrowserWindow({icon:page('assets/icon.ico'),width:1360,height:900,minWidth:860,minHeight:650,show:false,autoHideMenuBar:true,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}});
   win.webContents.setWindowOpenHandler(({url})=>{if(external(url))shell.openExternal(url);return{action:'deny'}});
   win.webContents.on('will-navigate',(event,url)=>{if(url!==win.webContents.getURL()){event.preventDefault();if(external(url))shell.openExternal(url);}});
   win.webContents.on('will-attach-webview',event=>event.preventDefault());
   session.defaultSession.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
   session.defaultSession.on('will-download',(_event,item)=>{item.setSaveDialogOptions({defaultPath:path.join(app.getPath('downloads'),path.basename(item.getFilename()))});});
   win.on('close',event=>{if(closing)return;event.preventDefault();local?.stop();(local?.flushLocal()||Promise.resolve()).then(()=>{closing=true;win.close();}).catch(()=>dialog.showErrorBox('Salvamento local','Não foi possível finalizar a gravação. Mantenha o programa aberto e exporte uma cópia JSON.'));});
-  updates=new Updates({updater:autoUpdater,dialog,app,window:()=>win,isBusy:()=>!!local?.localWrites||!!local?.syncTask||loggingIn});installIPC();
+  updates=new Updates({updater:autoUpdater,app,isBusy:()=>!!local?.localWrites||!!local?.syncTask||loggingIn});installIPC();
   await win.loadFile(page('ui/login.html'));win.show();
   if(await config())try{await login(false)}catch(error){bootError=error.message;}
  }).catch(()=>{dialog.showErrorBox('Não foi possível iniciar','Verifique a configuração do aplicativo e tente novamente.');app.quit();});

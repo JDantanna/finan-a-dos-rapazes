@@ -102,3 +102,11 @@ Consulte [GOOGLE_SETUP.md](GOOGLE_SETUP.md) para ativação, limites de salvamen
 
 Testes adicionais: `node tests/profiles-drive.cjs` e `node tests/google-profiles.cjs`. Ambos usam respostas simuladas.
 
+
+### Windows 1.3.0
+
+- Galeria de mais de 500 emojis para categorias, com busca por tema e entrada livre.
+- Consulta, download e progresso de atualização dentro da aplicação, inclusive na tela de entrada. O botão Reiniciar e atualizar usa instalação silenciosa, preservando a cópia local e os dados do Drive. Não reinicia com formulários pendentes ou gravação/sincronização em andamento.
+- Novo ícone de um pato original segurando notas de reais, aplicado ao executável, instalador, atalhos e janela.
+
+A passagem de uma versão antiga para 1.3.0 ainda usa o atualizador instalado anteriormente. As atualizações seguintes usam a nova interface interna. Uma instalação inicial continua usando o instalador Windows.

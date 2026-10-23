@@ -97,19 +97,28 @@ test('UI reutiliza preferências, vencimentos e filtro PDF com HTML escapado',()
  const html=pdfHtml(payload,'Pessoa <A>');assert(html.includes('Pessoa &lt;A&gt;'));assert(html.includes('&lt;script&gt;'));assert(!html.includes('<script>'));assert(html.includes('123,45'));
  assert.throws(()=>pdfHtml({...payload,expenseSource:'Outra conta'},'Pessoa'),/fora do filtro/);
 });
-function updatesFixture({available=true,answers=[0,0],busy=false,fail=false}={}){
- let downloaded=0,installed=0,dialogs=0;
- const updater={on(){},checkForUpdates:async()=>{if(fail)throw Error('offline');return {isUpdateAvailable:available,updateInfo:{version:'1.1.0'}}},downloadUpdate:async()=>{downloaded++},quitAndInstall(){installed++}};
- const updates=new Updates({updater,dialog:{showMessageBox:async()=>({response:answers[dialogs++]??1})},app:{isPackaged:true,getVersion:()=> '1.0.0'},window:()=>null,isBusy:()=>busy});
- return{updates,updater,counts:()=>({downloaded,installed,dialogs})};
+function updatesFixture({available=true,busy=false,fail=false}={}){
+ let downloaded=0,installed=0,installArgs;const events={};
+ const updater={on(name,fn){events[name]=fn;},checkForUpdates:async()=>{if(fail)throw Error('offline');return {isUpdateAvailable:available,updateInfo:{version:'1.3.0'}}},downloadUpdate:async()=>{downloaded++;events['download-progress']({percent:42.5});},quitAndInstall(...args){installed++;installArgs=args;}};
+ const updates=new Updates({updater,app:{isPackaged:true,getVersion:()=> '1.2.0'},isBusy:()=>busy});
+ return{updates,updater,events,counts:()=>({downloaded,installed,installArgs})};
 }
-test('Atualização requer aceite para baixar e instalar, sem instalar automaticamente',async()=>{
- const yes=updatesFixture();await yes.updates.check();assert.deepEqual(yes.counts(),{downloaded:1,installed:1,dialogs:2});assert.equal(yes.updater.autoInstallOnAppQuit,false);assert.equal(yes.updater.autoDownload,false);
- const no=updatesFixture({answers:[1]});await no.updates.check();assert.deepEqual(no.counts(),{downloaded:0,installed:0,dialogs:1});
- const later=updatesFixture({answers:[0,1]});await later.updates.check();assert.equal(later.counts().installed,0);
+test('Atualização interna exige ações separadas e instala silenciosamente ao reiniciar',async()=>{
+ const f=updatesFixture();assert.equal((await f.updates.check()).phase,'available');assert.equal(f.counts().downloaded,0);
+ assert.equal((await f.updates.download()).phase,'ready');assert.equal(f.counts().installed,0);
+ assert.equal((await f.updates.check()).phase,'ready');assert.equal(f.counts().downloaded,1);
+ assert.equal(f.updates.install().phase,'installing');assert.deepEqual(f.counts().installArgs,[true,true]);
+ assert.equal(f.updater.autoInstallOnAppQuit,false);assert.equal(f.updater.autoDownload,false);
 });
-test('Atualização não instala durante salvamento, sem versão nova ou após falha',async()=>{
- const busy=updatesFixture({busy:true});await busy.updates.check();assert.equal(busy.counts().installed,0);
- const current=updatesFixture({available:false});assert.match((await current.updates.check()).message,/mais recente/);assert.equal(current.counts().downloaded,0);
- const failure=updatesFixture({fail:true});await assert.rejects(()=>failure.updates.check(),/Não foi possível/);assert.equal(failure.updates.busy,false);
+test('Atualização preserva download e bloqueia instalação durante operação ou sem versão nova',async()=>{
+ const busy=updatesFixture({busy:true});await busy.updates.check();await busy.updates.download();assert.equal(busy.updates.install().phase,'ready');assert.equal(busy.counts().installed,0);
+ const current=updatesFixture({available:false});assert.match((await current.updates.check()).message,/mais recente/);await current.updates.download();assert.equal(current.counts().downloaded,0);current.updates.install();assert.equal(current.counts().installed,0);
+ const failure=updatesFixture({fail:true});assert.equal((await failure.updates.check()).phase,'error');assert.equal(failure.updates.busy,false);
+});
+test('Progresso e falhas do download permanecem disponíveis na tela interna',async()=>{
+ const f=updatesFixture();await f.updates.check();let finish;
+ f.updater.downloadUpdate=()=>new Promise(resolve=>{finish=resolve;});
+ const task=f.updates.download();f.events['download-progress']({percent:38.4});assert.equal(f.updates.status().percent,38.4);assert.equal((await f.updates.download()).phase,'downloading');
+ finish();await task;assert.equal(f.updates.status().percent,100);
+ const retry=updatesFixture();await retry.updates.check();retry.updater.downloadUpdate=async()=>{throw Error('offline');};assert.equal((await retry.updates.download()).phase,'available');assert.equal(retry.counts().installed,0);
 });

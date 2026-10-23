@@ -58,3 +58,14 @@ test('Interface real: selecionar, digitar outro nome, limpar, escolher outra cat
  input.value='Categoria alterada';input.dispatchEvent(new w.Event('input',{bubbles:true}));f.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settled(()=>a.getSaves()===1&&!d.querySelector('#entry-dialog').open);assert.equal(a.getState().entries[0].category,'Categoria alterada');
  }finally{a.dom.window.close();}
 });
+
+test('Galeria de emojis: centenas de opções, busca por tema e persistência do símbolo escolhido',async()=>{
+ const a=await app();try{
+ const w=a.w,d=w.document;d.querySelector('[data-view="categories"]').click();d.querySelector('[data-new-category]').click();
+ const symbols=[...d.querySelectorAll('[data-emoji]')].map(b=>b.dataset.emoji);assert(symbols.length>400);assert.equal(new Set(symbols).size,symbols.length);
+ for(const symbol of symbols)Categories.validate([{...category,symbol}]);
+ const search=d.querySelector('#emoji-search');search.value='educação';search.dispatchEvent(new w.Event('input',{bubbles:true}));assert([...d.querySelectorAll('[data-emoji]')].some(b=>b.dataset.emoji==='🎓'));assert(![...d.querySelectorAll('[data-emoji]')].some(b=>b.dataset.emoji==='🍕'));
+ search.value='viagem';search.dispatchEvent(new w.Event('input',{bubbles:true}));[...d.querySelectorAll('[data-emoji]')].find(b=>b.dataset.emoji==='🚁').click();const f=d.querySelector('#category-form');assert.equal(f.elements.symbol.value,'🚁');assert.equal(d.querySelector('#category-emojis').open,false);
+ f.elements.name.value='Campo';f.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settled(()=>a.getSaves()===1);assert.equal(a.getState().categories.find(c=>c.name==='Campo').symbol,'🚁');
+ }finally{a.dom.window.close();}
+});

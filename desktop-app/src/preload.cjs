@@ -6,5 +6,5 @@ contextBridge.exposeInMainWorld('desktop',Object.freeze({
  logout:()=>ipcRenderer.invoke('desktop:logout'),
  importClient:()=>ipcRenderer.invoke('desktop:import-client'),
  rpc:(method,...args)=>ipcRenderer.invoke('desktop:rpc',method,args),
- checkUpdate:()=>ipcRenderer.invoke('desktop:update')
+ checkUpdate:(action='check')=>ipcRenderer.invoke('desktop:update',action)
 }));
