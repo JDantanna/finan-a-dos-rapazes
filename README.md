@@ -7,6 +7,7 @@ Aplicativo de controle financeiro pessoal, em português, com cálculos em Rust.
 ## Versão online atual
 
 - Receitas e despesas, únicas ou recorrentes.
+- Cadastro de fontes de receita, com edição, exclusão e sugestões nos lançamentos.
 - Recorrências semanais, a cada 15 dias, mensais e anuais.
 - Cadastro de contas correntes, cartões de crédito, cartões de benefícios e dinheiro.
 - Compras parceladas no crédito, com datas mensais e divisão exata dos centavos.
