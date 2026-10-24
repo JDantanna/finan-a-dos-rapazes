@@ -62,8 +62,8 @@ function applyPersonalization(){
  const linear=rgb.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});
  const lum=linear[0]*.2126+linear[1]*.7152+linear[2]*.0722;
  const root=document.documentElement.style;root.setProperty('--green',color);root.setProperty('--mint','rgb('+rgb.map(v=>Math.round(v*.1+255*.9)).join(',')+')');root.setProperty('--accent-contrast',lum>.179?'#000000':'#ffffff');
- const brand=document.querySelector('.brand');if(p.appTitle)brand.textContent=p.appTitle;else brand.innerHTML='Finança<span>dos Rapazes</span>';
- brand.style.overflowWrap='anywhere';brand.style.fontSize=p.appTitle?'26px':'';
+ const brand=document.querySelector('.brand-title');if(p.appTitle)brand.textContent=p.appTitle;else brand.innerHTML='Finança<span>dos Rapazes</span>';
+ brand.style.overflowWrap='anywhere';brand.style.fontSize='';
  document.title=p.appTitle||'Finança dos Rapazes';const footer=document.querySelector('footer>span:first-child');if(footer)footer.textContent=p.appTitle||'Finança dos Rapazes';
 }
 function personalizationSettings(){const p=preferences();return `<section class="card settings-block" style="margin-bottom:20px"><h2>Personalização</h2><p>Preferências desta conta, salvas no seu Google Drive.</p><form id="personalization-form"><label>Nome exibido do usuário<input name="userName" maxlength="80" value="${esc(p.userName)}" placeholder="${esc(GoogleProfiles.stateInfo().profile?.name||'Nome da conta Google')}"></label><label>Título do aplicativo<input name="appTitle" maxlength="80" value="${esc(p.appTitle)}" placeholder="Finança dos Rapazes"></label><label>Cor principal<input name="color" type="color" value="${esc(p.color)}" style="height:48px;max-width:140px"></label><p class="muted">Deixe o nome ou o título em branco para usar o padrão. O nome também identifica os relatórios PDF. Sua conta Google e sua foto permanecem vinculadas ao login.</p><button class="primary" type="submit">Salvar personalização</button><button class="secondary" type="button" data-script-action="reset-personalization">Restaurar aparência padrão</button></form></section>`}

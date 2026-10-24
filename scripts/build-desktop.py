@@ -36,6 +36,7 @@ css = re.search(r'<style>(.*?)</style>', html, re.S).group(1) + '\n' + (root/'de
 html = re.sub(r'<style>.*?</style>', '<link rel="stylesheet" href="app.css">', html, flags=re.S)
 html = re.sub(r'<script>.*?</script>', '<script src="app.js"></script>', html, flags=re.S)
 html = html.replace('<base target="_top">', '')
+html = html.replace('<strong class="brand-title">', '<img class="brand-mascot" src="../assets/icon.png" alt="Pato segurando notas de reais" width="80" height="90"><strong class="brand-title">')
 html = html.replace('Teste online · Rust/WebAssembly', 'Aplicativo para computador · Google Drive')
 html = html.replace('Finança dos Rapazes · Teste online', 'Finança dos Rapazes')
 html = html.replace('◉ Perfil local · dados neste navegador', 'Conectando ao Google Drive…').replace('● Salvo neste navegador', 'Carregando do Google Drive…')

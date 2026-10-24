@@ -29,9 +29,9 @@ test('Categorias: validação do processo principal e restauração JSON preserv
  assert.throws(()=>validate({...empty,categories:[{...category,color:'invalid'}]}));
 });
 async function settled(check){for(let i=0;i<100;i++){if(check())return;await new Promise(resolve=>setTimeout(resolve,5));}throw Error('A interface não concluiu a operação.');}
-async function app(){
+async function app(entries=null){
  const root=path.join(__dirname,'../generated');const dom=new JSDOM(fs.readFileSync(path.join(root,'index.html'),'utf8'),{runScripts:'outside-only',url:'https://test.invalid/'}),w=dom.window;
- let state={...structuredClone(empty),entries:[{id:'legacy-entry',description:'Registro antigo',kind:'expense',cents:1200,category:'Moradia',source:'Conta',account:'',date:new Date().toISOString().slice(0,10),frequency:'once',end_date:null}]},revision=0,saves=0;
+ let state={...structuredClone(empty),entries:entries||[{id:'legacy-entry',description:'Registro antigo',kind:'expense',cents:1200,category:'Moradia',source:'Conta',account:'',date:new Date().toISOString().slice(0,10),frequency:'once',end_date:null}]},revision=0,saves=0;
  w.WebAssembly=WebAssembly;w.TextEncoder=TextEncoder;w.TextDecoder=TextDecoder;w.structuredClone=structuredClone;w.confirm=()=>true;
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};w.HTMLElement.prototype.scrollIntoView=function(){};
  const record=()=>({state:structuredClone(state),profile:{sub:'test-user',email:'test@example.test',name:'Pessoa'},revision:String(revision),lastBackup:new Date().toISOString(),folderId:'test-folder',fileId:'test-file'});
@@ -67,5 +67,22 @@ test('Galeria de emojis: centenas de opções, busca por tema e persistência do
  const search=d.querySelector('#emoji-search');search.value='educação';search.dispatchEvent(new w.Event('input',{bubbles:true}));assert([...d.querySelectorAll('[data-emoji]')].some(b=>b.dataset.emoji==='🎓'));assert(![...d.querySelectorAll('[data-emoji]')].some(b=>b.dataset.emoji==='🍕'));
  search.value='viagem';search.dispatchEvent(new w.Event('input',{bubbles:true}));[...d.querySelectorAll('[data-emoji]')].find(b=>b.dataset.emoji==='🚁').click();const f=d.querySelector('#category-form');assert.equal(f.elements.symbol.value,'🚁');assert.equal(d.querySelector('#category-emojis').open,false);
  f.elements.name.value='Campo';f.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settled(()=>a.getSaves()===1);assert.equal(a.getState().categories.find(c=>c.name==='Campo').symbol,'🚁');
+ }finally{a.dom.window.close();}
+});
+
+test('Planilha: filtra dia, semana, mês, fonte e período; inclui recorrências e exclui receitas',async()=>{
+ const make=(id,date,cents,source='Cartão',frequency='once',kind='expense')=>({id,date,cents,source,frequency,kind,description:id,category:'Viagens',account:'',end_date:null});
+ const a=await app([make('Compra', '2026-10-15',1000),make('Recorrente','2026-09-15',2000,'Conta','monthly'),make('Parcela 2/4','2026-10-16',3000),make('Fora da semana','2026-10-19',4000),make('Salário','2026-10-15',99999,'Conta','once','income')]);
+ try{
+ const w=a.w,d=w.document;assert(d.querySelector('.brand-mascot'));assert.equal(d.querySelector('.brand-mascot').getAttribute('src'),'../assets/icon.png');
+ d.querySelector('[data-view="sheet"]').click();const date=d.querySelector('#period-date');date.value='2026-10-15';date.dispatchEvent(new w.Event('change',{bubbles:true}));
+ await w.eval('refresh()');d.querySelector('[data-period="day"]').click();await settled(()=>d.querySelector('#period-label').textContent==='15/10/2026');
+ assert.equal(d.querySelectorAll('.expense-sheet tbody tr').length,2);assert.equal(d.querySelector('[data-sheet-total]').textContent,'R$ 30,00');assert(d.querySelector('.expense-sheet').textContent.includes('Recorrente'));assert(!d.querySelector('.expense-sheet').textContent.includes('Salário'));
+ d.querySelector('#next').click();await settled(()=>d.querySelector('#period-label').textContent==='16/10/2026');assert.equal(d.querySelectorAll('.expense-sheet tbody tr').length,1);assert(d.querySelector('.expense-sheet').textContent.includes('Parcela 2/4'));
+ d.querySelector('[data-period="week"]').click();await settled(()=>d.querySelectorAll('.expense-sheet tbody tr').length===3);assert.equal(d.querySelector('[data-sheet-total]').textContent,'R$ 60,00');
+ const source=d.querySelector('#sheet-source');source.value='Cartão';source.dispatchEvent(new w.Event('change',{bubbles:true}));assert.equal(d.querySelectorAll('.expense-sheet tbody tr').length,2);assert.equal(d.querySelector('[data-sheet-total]').textContent,'R$ 40,00');
+ d.querySelector('[data-sheet-clear]').click();d.querySelector('[data-period="month"]').click();await settled(()=>d.querySelectorAll('.expense-sheet tbody tr').length===4);assert.equal(d.querySelector('[data-sheet-total]').textContent,'R$ 100,00');
+ d.querySelector('[data-period="custom"]').click();await settled(()=>!d.querySelector('#custom-period').hidden);const f=d.querySelector('#custom-period');f.elements.start.value='2026-10-16';f.elements.end.value='2026-10-19';f.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settled(()=>d.querySelectorAll('.expense-sheet tbody tr').length===2);assert.equal(d.querySelector('[data-sheet-total]').textContent,'R$ 70,00');assert(d.querySelector('#prev').disabled);
+ assert.equal(a.getSaves(),0);
  }finally{a.dom.window.close();}
 });
