@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Publicar esta versão no GitHub Releases (requer OAuth configurado)
+        description: Publicar esta versão no GitHub Releases
         type: boolean
         default: false
 permissions:
