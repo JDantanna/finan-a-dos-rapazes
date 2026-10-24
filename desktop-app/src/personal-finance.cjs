@@ -35,7 +35,7 @@ async function openPersonal(directory,safe,{name,initialState}={}){
  const settingsFile=settingsStore(directory,safe),saved=await settingsFile.read(checkSettings);let settings=saved?.value;
  if(!settings){if(typeof name!=='string'||!name.trim()||name.trim().length>80)throw Error('Informe seu nome, com até 80 caracteres.');settings={schema:1,id:'local-'+randomUUID(),name:name.trim(),folder:null};await settingsFile.write(settings);}
  const cloud=new FolderBackups(settings),local=new PersonalFinance({cloud,storage:new CacheFile(directory,settings.id,safe),account:settings.id});local.settingsFile=settingsFile;await local.open();cloud.record={...structuredClone(local.envelope.record),revision:local.envelope.cloudRevision};
- if(initialState){const record=await local.loadFinance();if(record.state.entries.length||record.state.goals.length)throw Error('O perfil local já contém dados. Use a restauração JSON para escolher os dados a importar.');await local.saveFinance(initialState,record.revision,randomUUID(),settings.id);}
+ if(initialState){const record=await local.loadFinance();if(local.envelope.lastLocalOperation||record.state.entries.length||record.state.goals.length)throw Error('O perfil local já contém dados. Use a restauração JSON para escolher os dados a importar.');await local.saveFinance(initialState,record.revision,randomUUID(),settings.id);}
  return local;
 }
 async function hasPersonal(directory,safe){return !!await settingsStore(directory,safe).read(checkSettings);}

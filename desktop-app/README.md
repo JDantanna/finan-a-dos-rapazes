@@ -20,7 +20,7 @@ Em **Perfil e cópias** ou nas configurações, escolha opcionalmente uma pasta.
 
 Quem já tinha uma conta Google conectada pode continuar acessando o modo anterior. Em configurações, use **Copiar estes dados para o perfil local**. Isso copia os dados exibidos e preserva os arquivos antigos e o cache anterior.
 
-Na tela inicial, o modo antigo fica em **Tenho dados na edição anterior com Google**. Ele continua sujeito às regras OAuth do Google. A conexão antiga é opcional e não é necessária para novos usuários. Se um perfil local já tiver lançamentos ou metas, a migração automática é interrompida; use exportação/restauração JSON para escolher qual conjunto de dados manter.
+Na tela inicial, o modo antigo fica em **Tenho dados na edição anterior com Google**. Ele continua sujeito às regras OAuth do Google. A conexão antiga é opcional e não é necessária para novos usuários. Se um perfil local já tiver dados salvos, a migração automática é interrompida; use exportação/restauração JSON para escolher qual conjunto de dados manter.
 
 ## Build e publicação
 
