@@ -102,3 +102,10 @@ test('Consulta da cópia local não apaga formulário iniciado durante a espera'
  const a=await app();try{const w=a.w,d=w.document,rpc=w.desktop.rpc;let release;w.desktop.rpc=async(method,...args)=>{if(method==='loadFinance')await new Promise(r=>release=r);return rpc(method,...args);};const pending=w.eval('refreshLocalCopy()');await settled(()=>release);d.querySelector('[data-view="settings"]').click();const form=d.querySelector('#personalization-form');form.elements.userName.value='Meu rascunho';form.elements.userName.dispatchEvent(new w.Event('input',{bubbles:true}));release();await pending;assert(form.isConnected);assert.equal(form.elements.userName.value,'Meu rascunho');assert.equal(a.getSaves(),0);
  }finally{a.dom.window.close();}
 });
+
+test('Imagem abre visão geral e prévia de cor atualiza todos os papéis antes de salvar',async()=>{
+ const a=await app();try{const w=a.w,d=w.document;d.querySelector('[data-view="settings"]').click();d.querySelector('.brand-mascot').click();assert(d.querySelector('#content .stats'));assert.equal(a.getSaves(),0);
+ d.querySelector('[data-view="settings"]').click();const form=d.querySelector('#personalization-form'),color=form.elements.color;const before=d.documentElement.style.getPropertyValue('--line');color.value='#ac248e';color.dispatchEvent(new w.Event('input',{bubbles:true}));assert.equal(d.documentElement.style.getPropertyValue('--accent'),'#ac248e');assert.notEqual(d.documentElement.style.getPropertyValue('--line'),before);assert(d.documentElement.style.getPropertyValue('--surface-hover'));assert.equal(a.getSaves(),0);w.eval('renderProfileStatus()');assert.equal(d.documentElement.style.getPropertyValue('--accent'),'#ac248e');
+ form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settled(()=>a.getSaves()===1);assert.equal(a.getState().preferences.color,'#ac248e');assert.equal(d.documentElement.style.getPropertyValue('--accent'),'#ac248e');
+ }finally{a.dom.window.close();}
+});

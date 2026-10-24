@@ -118,3 +118,7 @@ O mascote aparece ao lado do título compacto, preservando o título personaliza
 ### Windows 1.4.1 — revisão de desempenho e integridade
 
 Revisão independente em três frentes, com cache limitado de relatórios, formatação monetária reutilizada, tabelas paginadas, redução das leituras do Drive, correções de conflitos/rascunhos e avisos. Veja [o relatório de revisão](CODE_REVIEW_1_4_1.md). Os totais e as exportações continuam abrangendo todo o filtro, mesmo com a tabela paginada.
+
+### Windows 1.5.0 — paleta adaptável
+
+A imagem e o título abrem a visão geral sem recarregar a janela. A cor principal define uma paleta de superfícies, bordas, textos legíveis, destaques e estados de interação, com prévia imediata nas configurações. Botões alternam texto claro/escuro conforme o contraste. Cores próprias das categorias e cores semânticas de receitas, despesas e avisos permanecem identificáveis.
