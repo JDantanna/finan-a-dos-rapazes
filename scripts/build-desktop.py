@@ -38,6 +38,8 @@ script = script.replace('Sua conta Google e sua foto permanecem vinculadas ao lo
 script = script.replace('Preferências desta conta, salvas no computador e sincronizadas com seu Drive.', 'Preferências salvas no computador e incluídas nas cópias configuradas.')
 script += '\n' + (root/'desktop-app/ui/update-view.js').read_text(encoding='utf-8')
 script += '\n' + (root/'desktop-app/ui/desktop-view.js').read_text(encoding='utf-8')
+script += '\n' + (root/'desktop-app/ui/nubank-import.js').read_text(encoding='utf-8')
+script += '\n' + (root/'desktop-app/ui/nubank-view.js').read_text(encoding='utf-8')
 if 'google.script.run' in script or 'window.desktop.rpc' not in script or script.count('async function webApi(')!=1:
     raise RuntimeError('O adaptador de armazenamento desktop não foi gerado corretamente.')
 css = re.search(r'<style>(.*?)</style>', html, re.S).group(1) + '\n' + (root/'desktop-app/ui/update-view.css').read_text(encoding='utf-8')

@@ -126,3 +126,14 @@ A imagem e o título abrem a visão geral sem recarregar a janela. A cor princip
 ### Windows 1.6.0 — uso sem conta Google
 
 O primeiro uso agora cria um perfil local e funciona offline, sem OAuth obrigatório. Cópias opcionais são gravadas em arquivos separados numa pasta escolhida pelo usuário; o Drive para computador pode sincronizá-la. A aplicação confirma a gravação na pasta, não o upload. Inclui migração dos dados da edição anterior e restauração manual em outros computadores. Veja [o guia atual do aplicativo Windows](desktop-app/README.md).
+
+
+### Importação Nubank (Windows 1.7.0)
+
+Em **Lançamentos → Importar Nubank** (também em Configurações), selecione o extrato da conta ou a fatura do cartão em CSV ou OFX. PDF não é aceito nesta versão. O processamento ocorre no computador, sem login bancário ou serviço externo de IA. CSV aceita os layouts `Data,Valor,Identificador,Descrição` e `date,category,title,amount`, com vírgula ou ponto e vírgula; OFX aceita transações SGML/XML de uma conta/cartão por arquivo. UTF-8 e Windows-1252 são reconhecidos. Limites: 5 MB e 10.000 movimentos por arquivo.
+
+Escolha uma conta/cartão existente do tipo detectado ou cadastre uma fonte durante a importação. Revise a prévia paginada, ajuste categorias e datas e selecione os movimentos antes de confirmar. A confirmação adiciona todo o lote em um salvamento local; a planilha, a visão geral e os relatórios usam esses lançamentos automaticamente. Os registros existentes são preservados.
+
+IDs bancários (ou uma identidade estável para linhas sem ID) impedem reimportações na mesma fonte. Coincidências exatas de fonte, descrição, data, tipo e valor são também excluídas por precaução. Alterações na descrição entre formatos, fontes recriadas ou lançamentos manuais com datas diferentes podem exigir revisão. Não há conciliação automática de recorrências já cadastradas. Pagamentos de fatura e possíveis investimentos/transferências internas começam desmarcados para evitar dupla contagem; receitas de transferências recebidas devem ser conferidas. Estornos/créditos são receitas e afetam os totais de receita. Descrições acima de 200 bytes são abreviadas no lançamento e preservadas em `importOriginalDescription` na cópia JSON.
+
+A conta não traz os detalhes das compras do cartão: importe a fatura separadamente. Datas seguem o arquivo (podem representar compra, não vencimento); parcelas futuras não presentes no arquivo não são geradas. Importar movimentos não confirma o pagamento de séries recorrentes nem substitui extratos oficiais.
