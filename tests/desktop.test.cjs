@@ -87,7 +87,7 @@ test('Drive preserva dados em conflito, ETag ausente ou conta incorreta',async()
 test('Drive não escreve estado inválido e não restaura cópia de outra pasta',async()=>{
  const f=driveFixture();await assert.rejects(()=>f.drive.saveFinance({entries:[{cents:-1}],goals:[]},'revision-1','operation-123',PROFILE.sub));assert.equal(f.counts().writes,0);
  f.drive.auth.request=async()=>json({ownedByMe:true,parents:['another-folder'],appProperties:{kind:'backup'}});
- await assert.rejects(()=>f.drive.restoreFinanceBackup('backup-1','revision-1','operation-123',PROFILE.sub),/não pertence/);
+ await assert.rejects(()=>f.drive.readBackup('backup-1',PROFILE.sub),/não pertence/);
 });
 test('UI reutiliza preferências, vencimentos e filtro PDF com HTML escapado',()=>{
  const state=validate({...EMPTY,preferences:{color:'#ffffff',userName:'Pessoa',appTitle:'Casa',reminderEnabled:true,reminderDays:7},reminders:{dismissed:['["item","2026-10-23"]']}});
@@ -121,4 +121,9 @@ test('Progresso e falhas do download permanecem disponíveis na tela interna',as
  const task=f.updates.download();f.events['download-progress']({percent:38.4});assert.equal(f.updates.status().percent,38.4);assert.equal((await f.updates.download()).phase,'downloading');
  finish();await task;assert.equal(f.updates.status().percent,100);
  const retry=updatesFixture();await retry.updates.check();retry.updater.downloadUpdate=async()=>{throw Error('offline');};assert.equal((await retry.updates.download()).phase,'available');assert.equal(retry.counts().installed,0);
+});
+
+test('Drive inicializa identidade antes de salvar e recusa outra conta antes de criar arquivos',async()=>{
+ const f=driveFixture();f.drive.user=null;await f.drive.saveFinance(EMPTY,'revision-1','fresh-operation',PROFILE.sub);assert.equal(f.counts().writes,1);
+ let calls=0;const drive=new FinanceDrive({profile:async()=>({...PROFILE,sub:'other-account'}),request:async()=>{calls++;throw Error('Não deveria acessar arquivos');}});await assert.rejects(()=>drive.saveFinance(EMPTY,'revision','fresh-operation',PROFILE.sub),/conta mudou/);assert.equal(calls,0);
 });

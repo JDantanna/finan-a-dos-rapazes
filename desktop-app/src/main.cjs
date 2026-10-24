@@ -10,7 +10,7 @@ const {Updates}=require('./updates.cjs');
 const {pdfHtml}=require('../generated/shared.cjs');
 const {autoUpdater}=require('electron-updater');
 const ROOT=path.resolve(__dirname,'..');
-let win,auth,drive,local,updates,loggingIn=false,closing=false,bootError='';
+let win,auth,drive,local,updates,loggingIn=false,closing=false,closePending=false,bootError='';
 const page=name=>path.join(ROOT,name);
 const clientFile=()=>path.join(app.getPath('userData'),'oauth-client.json');
 async function config(){for(const file of [clientFile(),page('oauth-client.json')]){try{return validateClient(JSON.parse(await fs.readFile(file,'utf8')))}catch(e){if(e.code!=='ENOENT')throw e;}}return null;}
@@ -35,7 +35,7 @@ async function exportPDF(payload,account){
  try{print.webContents.setWindowOpenHandler(()=>({action:'deny'}));await print.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent(html));const bytes=await print.webContents.printToPDF({printBackground:true,pageSize:'A4',preferCSSPageSize:true});return{name:'relatorio-'+payload.start+'-'+payload.end+'.pdf',base64:bytes.toString('base64')};}finally{print.destroy();}
 }
 function installIPC(){
- const handle=(name,fn)=>ipcMain.handle('desktop:'+name,async(event,...args)=>{trusted(event);return fn(...args)});
+ const handle=(name,fn)=>ipcMain.handle('desktop:'+name,async(event,...args)=>{trusted(event);if(closePending)throw Error('O aplicativo está finalizando o salvamento local.');return fn(...args)});
  handle('status',async()=>({configured:!!await config(),version:app.getVersion(),error:bootError}));
  handle('login',()=>login(true));
  handle('logout',async()=>{if(local?.syncTask||local?.localWrites||loggingIn)throw Error('Aguarde a operação terminar.');local?.stop();await local?.flushLocal();await auth?.logout();local=null;drive=null;auth=null;await win.loadFile(page('ui/login.html'));});
@@ -60,7 +60,7 @@ else {
   win.webContents.on('will-attach-webview',event=>event.preventDefault());
   session.defaultSession.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
   session.defaultSession.on('will-download',(_event,item)=>{item.setSaveDialogOptions({defaultPath:path.join(app.getPath('downloads'),path.basename(item.getFilename()))});});
-  win.on('close',event=>{if(closing)return;event.preventDefault();local?.stop();(local?.flushLocal()||Promise.resolve()).then(()=>{closing=true;win.close();}).catch(()=>dialog.showErrorBox('Salvamento local','Não foi possível finalizar a gravação. Mantenha o programa aberto e exporte uma cópia JSON.'));});
+  win.on('close',event=>{if(closing)return;event.preventDefault();if(closePending)return;closePending=true;local?.stop();(local?.flushLocal()||Promise.resolve()).then(()=>{closing=true;win.close();}).catch(()=>{closePending=false;local?.start();dialog.showErrorBox('Salvamento local','Não foi possível finalizar a gravação. Mantenha o programa aberto e exporte uma cópia JSON.');});});
   updates=new Updates({updater:autoUpdater,app,isBusy:()=>!!local?.localWrites||!!local?.syncTask||loggingIn});installIPC();
   await win.loadFile(page('ui/login.html'));win.show();
   if(await config())try{await login(false)}catch(error){bootError=error.message;}

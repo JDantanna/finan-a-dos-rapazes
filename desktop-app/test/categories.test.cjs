@@ -86,3 +86,19 @@ test('Planilha: filtra dia, semana, mês, fonte e período; inclui recorrências
  assert.equal(a.getSaves(),0);
  }finally{a.dom.window.close();}
 });
+
+test('Tabelas limitam linhas por página sem perder total e acumulado do filtro',async()=>{
+ const entries=Array.from({length:205},(_,i)=>({id:'row-'+i,description:'Gasto '+String(i).padStart(3,'0'),kind:'expense',cents:100,source:i<5?'Outra':'Cartão',category:'Campo',account:'',date:new Date().toISOString().slice(0,10),frequency:'once',end_date:null}));
+ const a=await app(entries);try{const w=a.w,d=w.document;d.querySelector('[data-view="sheet"]').click();assert.equal(d.querySelectorAll('.expense-sheet tbody tr').length,100);assert.equal(d.querySelector('[data-sheet-total]').textContent,'R$ 205,00');d.querySelector('[data-sheet-page="1"]').click();assert.equal(d.querySelector('.expense-sheet tbody th').textContent,'101');assert.equal(d.querySelector('.expense-sheet tbody tr td:last-child').textContent,'R$ 101,00');d.querySelector('[data-sheet-page="2"]').click();assert.equal(d.querySelectorAll('.expense-sheet tbody tr').length,5);
+ const source=d.querySelector('#sheet-source');source.value='Outra';source.dispatchEvent(new w.Event('change',{bubbles:true}));assert.equal(d.querySelectorAll('.expense-sheet tbody tr').length,5);assert.equal(d.querySelector('.expense-sheet tbody th').textContent,'1');assert.equal(d.querySelector('[data-sheet-total]').textContent,'R$ 5,00');
+ d.querySelector('[data-view="entries"]').click();assert.equal(d.querySelectorAll('#content tbody tr').length,100);d.querySelector('[data-table-page="1"]').click();assert.equal(d.querySelectorAll('#content tbody tr').length,100);
+ }finally{a.dom.window.close();}
+});
+test('Avisos em diálogos sem formulário não lançam erro nem perdem a mensagem',async()=>{
+ const a=await app();try{const d=a.w.document,dialog=d.createElement('dialog');dialog.open=true;d.body.append(dialog);a.w.eval("toast('Gravado com sucesso')");assert.equal(dialog.querySelector('.form-message').textContent,'Gravado com sucesso');}finally{a.dom.window.close();}
+});
+
+test('Consulta da cópia local não apaga formulário iniciado durante a espera',async()=>{
+ const a=await app();try{const w=a.w,d=w.document,rpc=w.desktop.rpc;let release;w.desktop.rpc=async(method,...args)=>{if(method==='loadFinance')await new Promise(r=>release=r);return rpc(method,...args);};const pending=w.eval('refreshLocalCopy()');await settled(()=>release);d.querySelector('[data-view="settings"]').click();const form=d.querySelector('#personalization-form');form.elements.userName.value='Meu rascunho';form.elements.userName.dispatchEvent(new w.Event('input',{bubbles:true}));release();await pending;assert(form.isConnected);assert.equal(form.elements.userName.value,'Meu rascunho');assert.equal(a.getSaves(),0);
+ }finally{a.dom.window.close();}
+});

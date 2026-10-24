@@ -42,13 +42,9 @@ class LocalFinance{
  async performSync(){
   this.message='Sincronizando com o Google Drive…';
   try{for(let pass=0;pass<2;pass++){
-   const pending=await this.prepare();const remote=await this.cloud.loadFinance();this.guard(remote.profile.sub);
-   if(pending.clean){await this.serialize(async()=>{const e=this.envelope;if(e.dirty||e.record.revision!==pending.revision)return;const next=structuredClone(e);if(remote.revision!==e.cloudRevision||JSON.stringify(remote.profile)!==JSON.stringify(e.record.profile)){next.record={...remote,revision:randomUUID()};next.cloudRevision=remote.revision;}next.lastSync=new Date().toISOString();await this.commit(next);});break;}
-   let saved=remote;
-   if(remote.operationId!==pending.id){
-    if(remote.revision!==pending.base)throw Error('CONFLICT: os dados também foram alterados em outro dispositivo.');
-    saved=await this.cloud.saveFinance(pending.state,pending.base,pending.id,this.account);
-   }
+   const pending=await this.prepare();
+   if(pending.clean){const remote=await this.cloud.loadFinance();this.guard(remote.profile.sub);await this.serialize(async()=>{const e=this.envelope;if(e.dirty||e.record.revision!==pending.revision)return;const next=structuredClone(e);if(remote.revision!==e.cloudRevision||JSON.stringify(remote.profile)!==JSON.stringify(e.record.profile)){next.record={...remote,revision:randomUUID()};next.cloudRevision=remote.revision;}next.lastSync=new Date().toISOString();await this.commit(next);});break;}
+   const saved=await this.cloud.saveFinance(pending.state,pending.base,pending.id,this.account);this.guard(saved.profile.sub);
    await this.serialize(async()=>{const next=structuredClone(this.envelope);if(next.inflight?.id!==pending.id)throw Error('Sincronização local mudou.');next.cloudRevision=saved.revision;next.record.folderId=saved.folderId;next.record.fileId=saved.fileId;next.record.lastBackup=saved.lastBackup;next.lastSync=new Date().toISOString();next.dirty=next.record.revision!==pending.revision;next.inflight=null;next.conflict=false;await this.commit(next);});
    if(!this.envelope.dirty)break;
   }this.message=this.envelope.dirty?'Salvo no computador · novas alterações aguardam o próximo envio.':'Computador e Google Drive sincronizados.';return this.status();
@@ -60,7 +56,7 @@ class LocalFinance{
  async resolveConflict(choice){
   if(this.syncTask)throw Error('Aguarde a sincronização atual.');if(!['local','cloud'].includes(choice))throw Error('Escolha inválida.');
   // Block concurrent sync while reading the explicit resolution snapshot.
-  this.syncTask=(async()=>{const remote=await this.cloud.loadFinance();this.guard(remote.profile.sub);await this.serialize(async()=>{const old=this.envelope;await this.storage.archive(old);const next=structuredClone(old);if(choice==='cloud'){next.record={...remote,revision:randomUUID()};next.dirty=false;}next.cloudRevision=remote.revision;next.inflight=null;next.conflict=false;await this.commit(next);this.message=choice==='cloud'?'Dados do Drive carregados. A cópia local anterior foi preservada.':'Cópia local preservada; preparando envio confirmado.';});})().finally(()=>{this.syncTask=null;});await this.syncTask;if(choice==='local')await this.synchronize();return this.loadFinance();
+  this.syncTask=(async()=>{await this.queue;const revision=this.envelope.record.revision;const remote=await this.cloud.loadFinance();this.guard(remote.profile.sub);await this.serialize(async()=>{const old=this.envelope;if(choice==='cloud'&&old.record.revision!==revision)throw Error('Os dados locais mudaram durante a consulta. Confira as alterações e escolha novamente.');await this.storage.archive(old);const next=structuredClone(old);if(choice==='cloud'){next.record={...remote,revision:randomUUID()};next.dirty=false;}else next.dirty=true;next.cloudRevision=remote.revision;next.inflight=null;next.conflict=false;await this.commit(next);this.message=choice==='cloud'?'Dados do Drive carregados. A cópia local anterior foi preservada.':'Cópia local preservada; preparando envio confirmado.';});})().finally(()=>{this.syncTask=null;});await this.syncTask;if(choice==='local')await this.synchronize();return this.loadFinance();
  }
  async listFinanceBackups(account){this.guard(account);await this.cloud.loadFinance();return this.cloud.listFinanceBackups(account);}
  async restoreFinanceBackup(id,revision,operationId,account){this.guard(account);await this.cloud.loadFinance();const state=await this.cloud.readBackup(id,account);return this.saveFinance(state,revision,operationId,account);}

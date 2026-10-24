@@ -37,9 +37,14 @@ class FinanceDrive{
   record.state=validate(record.state);return {record,etag};
  }
  response(record){return {profile:this.user,folderId:this.folder.id,fileId:this.file.id,revision:record.revision,lastBackup:record.savedAt,operationId:record.operationId,state:record.state};}
- async loadFinance(){if(!this.user)this.user=await this.auth.profile();if(!this.file)await this.locate();return this.response((await this.read()).record);}
+ async initialize(account){
+  if(this.user&&this.file){if(account)this.guard(account);return;}
+  if(!this.initializing)this.initializing=(async()=>{if(!this.user)this.user=await this.auth.profile();if(account)this.guard(account);if(!this.file)await this.locate();})().finally(()=>{this.initializing=null;});
+  await this.initializing;if(account)this.guard(account);
+ }
+ async loadFinance(){await this.initialize();return this.response((await this.read()).record);}
  async saveFinance(state,revision,operationId,account){
-  this.guard(account);if(this.busy)throw Error('Aguarde o salvamento atual.');if(typeof operationId!=='string'||!/^[-\w]{8,200}$/.test(operationId))throw Error('Operação inválida.');
+  await this.initialize(account);this.guard(account);if(this.busy)throw Error('Aguarde o salvamento atual.');if(typeof operationId!=='string'||!/^[-\w]{8,200}$/.test(operationId))throw Error('Operação inválida.');
   this.busy=true;try{
    state=validate(state);const {record,etag}=await this.read();
    if(record.operationId===operationId)return this.response(record);
@@ -59,6 +64,5 @@ class FinanceDrive{
   if(copy.schema!==3||copy.owner!==this.user.email)throw Error('Cópia de outra conta ou incompatível.');
   return validate(copy.state);
  }
- async restoreFinanceBackup(id,revision,operationId,account){return this.saveFinance(await this.readBackup(id,account),revision,operationId,account);}
 }
 module.exports={FinanceDrive};

@@ -114,3 +114,7 @@ A passagem de uma versão antiga para 1.3.0 ainda usa o atualizador instalado an
 ### Windows 1.4.0
 
 O mascote aparece ao lado do título compacto, preservando o título personalizado. A seção Planilha de gastos mostra despesas do período em uma tabela com linhas numeradas, cabeçalho fixo, valores, acumulado e total. Inclui filtros de fonte, categoria e descrição. Os períodos Dia, Semana, Mês, Ano e Período personalizado usam o mesmo relatório Rust, incluindo recorrências e parcelas. O período personalizado permite até 366 dias. A prévia não modifica dados.
+
+### Windows 1.4.1 — revisão de desempenho e integridade
+
+Revisão independente em três frentes, com cache limitado de relatórios, formatação monetária reutilizada, tabelas paginadas, redução das leituras do Drive, correções de conflitos/rascunhos e avisos. Veja [o relatório de revisão](CODE_REVIEW_1_4_1.md). Os totais e as exportações continuam abrangendo todo o filtro, mesmo com a tabela paginada.

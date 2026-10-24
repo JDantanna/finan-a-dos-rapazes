@@ -27,7 +27,7 @@ jobs:
       - run: npm ci
         working-directory: desktop-app
       - run: python scripts/build-desktop.py
-      - run: node --test tests/desktop.test.cjs desktop-app/test/*.test.cjs
+      - run: node --test tests/*.cjs desktop-app/test/*.test.cjs
       - name: Configurar cliente Google para computador
         shell: pwsh
         env:

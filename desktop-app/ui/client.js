@@ -13,7 +13,7 @@ const GoogleProfiles={
 function hasLocalDraft(){return !!document.querySelector('dialog[open]:not(.update-dialog), main form[data-local-draft="true"]');}
 for(const event of ['input','change'])document.addEventListener(event,e=>{const form=e.target.closest('form');if(form&&form.id!=='custom-period')form.dataset.localDraft='true';});
 document.addEventListener('reset',e=>{if(e.target.matches('form'))delete e.target.dataset.localDraft;});
-async function refreshLocalCopy(){if(scriptBusy||saving||hasLocalDraft())return;const account=scriptRecord?.profile.sub,result=await scriptRpc('loadFinance');if(account&&account!==result.profile.sub)return;scriptRecord=result;scriptLoading=Promise.resolve(result);updateSync(result.localSync);state=result.state;state.accounts||=[];state.incomeSources||=[];dueCheckKey='';await refresh();}
+async function refreshLocalCopy(){if(scriptBusy||saving||hasLocalDraft())return;const before=scriptRecord,account=before?.profile.sub,result=await scriptRpc('loadFinance');if(scriptBusy||saving||hasLocalDraft()||scriptRecord!==before||(account&&account!==result.profile.sub))return;scriptRecord=result;scriptLoading=Promise.resolve(result);updateSync(result.localSync);state=result.state;state.accounts||=[];state.incomeSources||=[];dueCheckKey='';await refresh();}
 async function webApi(route,body){
  await scriptLoad();if(route==='/api/state'){
   if(body===undefined)return scriptRecord.state;if(scriptBusy)throw Error('Aguarde o salvamento local.');
