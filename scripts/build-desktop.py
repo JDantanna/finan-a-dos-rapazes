@@ -34,6 +34,8 @@ script = script.replace('Google Drive · Cada pessoa usa a própria conta e a pr
 script = script.replace('Cada salvamento confirmado grava os dados no seu Google Drive. Uma cópia da versão anterior é mantida na mesma pasta.', 'Cada salvamento grava a cópia local. O Drive recebe as alterações em segundo plano, a cada cinco minutos, mantendo uma cópia anterior.')
 script = script.replace('Preferências desta conta, salvas no seu Google Drive.', 'Preferências desta conta, salvas no computador e sincronizadas com seu Drive.')
 script = script.replace('Restaurar esta cópia no seu Drive? A versão atual será preservada como backup.', 'Restaurar esta cópia no computador? Ela será enviada ao Drive na próxima sincronização.')
+script = script.replace('Sua conta Google e sua foto permanecem vinculadas ao login.', 'No modo local, o nome é definido por você e não depende de uma conta Google.')
+script = script.replace('Preferências desta conta, salvas no computador e sincronizadas com seu Drive.', 'Preferências salvas no computador e incluídas nas cópias configuradas.')
 script += '\n' + (root/'desktop-app/ui/update-view.js').read_text(encoding='utf-8')
 script += '\n' + (root/'desktop-app/ui/desktop-view.js').read_text(encoding='utf-8')
 if 'google.script.run' in script or 'window.desktop.rpc' not in script or script.count('async function webApi(')!=1:
@@ -43,6 +45,7 @@ html = re.sub(r'<style>.*?</style>', '<link rel="stylesheet" href="app.css">', h
 html = re.sub(r'<script>.*?</script>', '<script src="app.js"></script>', html, flags=re.S)
 html = html.replace('<base target="_top">', '')
 html = replace_once(html,'<strong class="brand-title">', '<img class="brand-mascot" src="../assets/icon.png" alt="Pato segurando notas de reais" width="80" height="90"><strong class="brand-title">')
+html = html.replace('Perfis e Google Drive', 'Perfil e cópias')
 html = html.replace('Teste online · Rust/WebAssembly', 'Aplicativo para computador · Google Drive')
 html = html.replace('Finança dos Rapazes · Teste online', 'Finança dos Rapazes')
 html = html.replace('◉ Perfil local · dados neste navegador', 'Conectando ao Google Drive…').replace('● Salvo neste navegador', 'Carregando do Google Drive…')

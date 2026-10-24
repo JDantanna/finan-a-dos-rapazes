@@ -2,6 +2,8 @@
 const {contextBridge,ipcRenderer}=require('electron');
 contextBridge.exposeInMainWorld('desktop',Object.freeze({
  status:()=>ipcRenderer.invoke('desktop:status'),
+ localLogin:name=>ipcRenderer.invoke('desktop:local-login',name),
+ migrateLocal:()=>ipcRenderer.invoke('desktop:migrate-local'),
  login:()=>ipcRenderer.invoke('desktop:login'),
  logout:()=>ipcRenderer.invoke('desktop:logout'),
  importClient:()=>ipcRenderer.invoke('desktop:import-client'),

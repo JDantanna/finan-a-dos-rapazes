@@ -28,18 +28,15 @@ jobs:
         working-directory: desktop-app
       - run: python scripts/build-desktop.py
       - run: node --test tests/*.cjs desktop-app/test/*.test.cjs
-      - name: Configurar cliente Google para computador
+      - name: Conexão Google anterior (opcional)
         shell: pwsh
         env:
           GOOGLE_DESKTOP_CLIENT_JSON: ${{ secrets.GOOGLE_DESKTOP_CLIENT_JSON }}
-          PUBLISH_RELEASE: ${{ inputs.publish }}
         run: |
           if ($env:GOOGLE_DESKTOP_CLIENT_JSON) {
             $client = $env:GOOGLE_DESKTOP_CLIENT_JSON | ConvertFrom-Json
             if (!$client.installed.client_id -or !$client.installed.client_secret) { throw 'Cliente OAuth inválido; use tipo App para computador.' }
             [IO.File]::WriteAllText("$pwd/desktop-app/oauth-client.json", $env:GOOGLE_DESKTOP_CLIENT_JSON)
-          } elseif ($env:PUBLISH_RELEASE -eq 'true') {
-            throw 'Configure GOOGLE_DESKTOP_CLIENT_JSON antes de publicar uma edição utilizável.'
           }
       - run: npm run dist:win
         working-directory: desktop-app
@@ -71,4 +68,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=$(node -p "require('./desktop-app/package.json').version")
-          gh release create "v$VERSION" installer/* --target "$GITHUB_SHA" --title "Windows $VERSION" --notes 'Aplicativo Windows com dados no Google Drive. Instale o arquivo .exe. As próximas versões são consultadas pelo botão Checar atualização.' --latest
+          gh release create "v$VERSION" installer/* --target "$GITHUB_SHA" --title "Windows $VERSION" --notes 'Aplicativo Windows com perfil local, sem login Google obrigatório, e cópias opcionais em uma pasta sincronizada. Instale o arquivo .exe. Atualizações pelo botão Checar atualização.' --latest

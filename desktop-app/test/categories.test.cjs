@@ -109,3 +109,7 @@ test('Imagem abre visão geral e prévia de cor atualiza todos os papéis antes 
  form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await settled(()=>a.getSaves()===1);assert.equal(a.getState().preferences.color,'#ac248e');assert.equal(d.documentElement.style.getPropertyValue('--accent'),'#ac248e');
  }finally{a.dom.window.close();}
 });
+
+test('Restauração aceita a cópia portátil produzida pela pasta opcional',async()=>{
+ const a=await app();try{const d=a.w.document,input=d.querySelector('#restore-file'),backup={schema:1,profileId:'other-device',state:{entries:[],goals:[],accounts:[],incomeSources:[],preferences:{userName:'Importado',color:'#123456',appTitle:'Casa'},categories:[]}};Object.defineProperty(input,'files',{value:[{size:500,text:async()=>JSON.stringify(backup)}]});input.dispatchEvent(new a.w.Event('change',{bubbles:true}));await settled(()=>a.getSaves()===1);assert.equal(a.getState().preferences.userName,'Importado');assert.equal(a.getState().entries.length,0);}finally{a.dom.window.close();}
+});

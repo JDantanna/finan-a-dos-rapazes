@@ -122,3 +122,7 @@ Revisão independente em três frentes, com cache limitado de relatórios, forma
 ### Windows 1.5.0 — paleta adaptável
 
 A imagem e o título abrem a visão geral sem recarregar a janela. A cor principal define uma paleta de superfícies, bordas, textos legíveis, destaques e estados de interação, com prévia imediata nas configurações. Botões alternam texto claro/escuro conforme o contraste. Cores próprias das categorias e cores semânticas de receitas, despesas e avisos permanecem identificáveis.
+
+### Windows 1.6.0 — uso sem conta Google
+
+O primeiro uso agora cria um perfil local e funciona offline, sem OAuth obrigatório. Cópias opcionais são gravadas em arquivos separados numa pasta escolhida pelo usuário; o Drive para computador pode sincronizá-la. A aplicação confirma a gravação na pasta, não o upload. Inclui migração dos dados da edição anterior e restauração manual em outros computadores. Veja [o guia atual do aplicativo Windows](desktop-app/README.md).
