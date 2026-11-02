@@ -71,4 +71,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=$(node -p "require('./desktop-app/package.json').version")
-          gh release create "v$VERSION" installer/* --target "$GITHUB_SHA" --title "Windows $VERSION" --notes 'Importação de faturas Nubank em CSV, OFX e PDF com texto selecionável; escolha explícita de conta ou cartão e vencimento da fatura. Prévia antes de salvar, prevenção de duplicatas e processamento local. Otimizações da importação e limpeza automática dos builds Rust no desenvolvimento. Atualize dentro do aplicativo em Configurações > Checar atualização.' --latest
+          gh release create "v$VERSION" installer/* --target "$GITHUB_SHA" --title "Windows $VERSION" --notes 'Recuperação segura da conexão Google: botão Reconectar Google sem sair do perfil, validação da mesma conta e mensagens específicas de autorização expirada, configuração e espaço no Drive. Dados locais e sincronizações pendentes preservados. A alternativa de perfil local continua disponível. Atualize em Configurações > Checar atualização.' --latest

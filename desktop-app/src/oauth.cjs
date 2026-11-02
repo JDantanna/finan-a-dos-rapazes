@@ -16,19 +16,34 @@ class Vault{
  async write(value){if(!await this.safe.isAsyncEncryptionAvailable())throw Error('A proteção de credenciais do sistema não está disponível.');await fs.mkdir(path.dirname(this.file),{recursive:true});const temp=this.file+'.tmp';await fs.writeFile(temp,await this.safe.encryptStringAsync(JSON.stringify(value)),{mode:0o600});await fs.rename(temp,this.file);}
  async clear(){await fs.rm(this.file,{force:true});}
 }
-async function readResponse(response){
- if(!response.ok){if(response.status===412)throw Error('CONFLICT: outro dispositivo alterou os dados. Recarregue do Drive antes de salvar.');if(response.status===401)throw Error('Sua autorização Google expirou. Saia e conecte novamente.');throw Error('Não foi possível acessar o Google (HTTP '+response.status+'). O envio ao Drive não foi confirmado.');}
+function googleError(message,code){const error=Error(message);error.code=code;return error;}
+async function responseJson(response,limit){
  const reader=response.body?.getReader();if(!reader)return {};const chunks=[];let size=0;
- try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>4_100_000){await reader.cancel();throw Error('Resposta excede o limite de tamanho.');}chunks.push(value);}}finally{reader.releaseLock();}
+ try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>limit){await reader.cancel();throw Error('Resposta excede o limite de tamanho.');}chunks.push(value);}}finally{reader.releaseLock();}
  const text=Buffer.concat(chunks).toString('utf8');return text?JSON.parse(text):{};
 }
+async function readResponse(response,context='api'){
+ if(response.ok)return responseJson(response,4_100_000);
+ // Decode only bounded, known error codes. Never show server messages or tokens.
+ let data={};try{data=await responseJson(response,16_384);}catch{}
+ const reason=typeof data?.error==='string'?data.error:data?.error?.errors?.[0]?.reason;
+ if(response.status===412)throw googleError('CONFLICT: outro dispositivo alterou os dados. Recarregue do Drive antes de salvar.','GOOGLE_CONFLICT');
+ if(response.status===401||(context==='oauth'&&reason==='invalid_grant'))throw googleError('Sua autorização Google expirou ou foi revogada. Use Reconectar Google em Perfil e cópias, com a mesma conta. Os dados locais foram preservados.','GOOGLE_REAUTH_REQUIRED');
+ if(context==='oauth'&&['invalid_client','unauthorized_client','deleted_client'].includes(reason))throw googleError('A configuração Google deste aplicativo foi recusada. Atualize o aplicativo ou use o perfil local em Configurações. Seus dados locais foram preservados.','GOOGLE_CLIENT_INVALID');
+ if(['storageQuotaExceeded','teamDriveFileLimitExceeded'].includes(reason))throw googleError('O Google Drive está sem espaço para esta cópia. Libere espaço e tente sincronizar novamente.','GOOGLE_STORAGE_FULL');
+ if(['insufficientPermissions','appNotAuthorizedToFile','accessNotConfigured'].includes(reason))throw googleError('O Google recusou o acesso aos arquivos do aplicativo. Confira a autorização ou use Reconectar Google. Seus dados locais foram preservados.','GOOGLE_PERMISSION_DENIED');
+ const detail=['invalid_request','invalid_scope','redirect_uri_mismatch','access_denied','badRequest','invalidParameter','rateLimitExceeded','userRateLimitExceeded'].includes(reason)?' Código: '+reason+'.':'';
+ throw googleError('Não foi possível '+(context==='oauth'?'renovar a conexão Google':'acessar o Google Drive')+' (HTTP '+response.status+').'+detail+' O envio ao Drive não foi confirmado.','GOOGLE_REQUEST_FAILED');
+}
+
 class GoogleAuth{
  constructor({vault,client,openExternal,fetchImpl=fetch}){Object.assign(this,{vault,client,openExternal,fetchImpl});this.session=null;this.pending=null;}
- async tokenRequest(fields){return readResponse(await this.fetchImpl('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...this.client,...fields}),signal:AbortSignal.timeout(TIMEOUT)}));}
+ async tokenRequest(fields){return readResponse(await this.fetchImpl('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...this.client,...fields}),signal:AbortSignal.timeout(TIMEOUT)}),'oauth');}
  async accessToken(){
+  if(this.reauthRequired)throw googleError('Sua autorização Google expirou ou foi revogada. Use Reconectar Google em Perfil e cópias.','GOOGLE_REAUTH_REQUIRED');
   if(this.session?.access_token&&this.session.expires_at>Date.now()+60_000)return this.session.access_token;
   if(this.pending)return this.pending;
-  this.pending=(async()=>{const saved=await this.vault.read();if(!saved.refresh_token)throw Error('Conecte sua conta Google para continuar.');const result=await this.tokenRequest({grant_type:'refresh_token',refresh_token:saved.refresh_token});this.session={access_token:result.access_token,expires_at:Date.now()+result.expires_in*1000};return this.session.access_token;})();
+  this.pending=(async()=>{const saved=await this.vault.read();if(!saved.refresh_token)throw Error('Conecte sua conta Google para continuar.');let result;try{result=await this.tokenRequest({grant_type:'refresh_token',refresh_token:saved.refresh_token});}catch(error){if(error.code==='GOOGLE_REAUTH_REQUIRED')this.reauthRequired=true;throw error;}if(typeof result.access_token!=='string'||!result.access_token||!Number.isFinite(result.expires_in)||result.expires_in<=0)throw googleError('Resposta de autorização Google inválida. Tente reconectar.','GOOGLE_TOKEN_INVALID');this.session={access_token:result.access_token,expires_at:Date.now()+result.expires_in*1000};return this.session.access_token;})();
   try{return await this.pending}finally{this.pending=null;}
  }
  async request(url,options={}){
@@ -36,7 +51,8 @@ class GoogleAuth{
   const token=await this.accessToken();return this.fetchImpl(url,{...options,headers:{...options.headers,Authorization:'Bearer '+token},redirect:'error',signal:AbortSignal.timeout(TIMEOUT)});
  }
  async profile(){const p=await readResponse(await this.request('https://openidconnect.googleapis.com/v1/userinfo'));if(!p.sub||!p.email||!p.email_verified)throw Error('A conta Google precisa ter um e-mail confirmado.');return{sub:p.sub,email:p.email.toLowerCase(),name:p.name||p.email,picture:p.picture||''};}
- async login(){
+ async login({expectedAccount}={}){
+  const previousSession=this.session,previousReauth=this.reauthRequired;
   const verifier=crypto.randomBytes(48).toString('base64url'),state=crypto.randomBytes(32).toString('base64url');
   const challenge=crypto.createHash('sha256').update(verifier).digest('base64url');
   const server=http.createServer({requestTimeout:10_000,headersTimeout:10_000,maxHeaderSize:8192});let timer;
@@ -61,11 +77,12 @@ class GoogleAuth{
    const tokens=await this.tokenRequest({grant_type:'authorization_code',code,redirect_uri:redirect,code_verifier:verifier});
    if(!tokens.refresh_token||!tokens.access_token)throw Error('O Google não retornou autorização persistente. Tente conectar novamente.');
    if(!tokens.scope?.split(' ').includes(SCOPES[3]))throw Error('Autorize o acesso aos arquivos do aplicativo no Google Drive.');
-   this.session={access_token:tokens.access_token,expires_at:Date.now()+tokens.expires_in*1000};
+   this.reauthRequired=false;this.session={access_token:tokens.access_token,expires_at:Date.now()+tokens.expires_in*1000};
    const profile=await this.profile();
+   if(expectedAccount&&profile.sub!==expectedAccount)throw Error('Você escolheu outra conta Google. Reconecte com a mesma conta deste perfil. Os dados e a autorização anteriores foram preservados.');
    await this.vault.write({refresh_token:tokens.refresh_token,sub:profile.sub});
    return profile;
-  }finally{clearTimeout(timer);server.closeAllConnections();server.close();}
+  }catch(error){this.session=previousSession;this.reauthRequired=previousReauth;throw error;}finally{clearTimeout(timer);server.closeAllConnections();server.close();}
  }
  async logout(){this.session=null;await this.vault.clear();}
 }

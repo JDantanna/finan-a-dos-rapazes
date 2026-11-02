@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('desktop',Object.freeze({
  localLogin:name=>ipcRenderer.invoke('desktop:local-login',name),
  migrateLocal:()=>ipcRenderer.invoke('desktop:migrate-local'),
  login:()=>ipcRenderer.invoke('desktop:login'),
+ reconnect:()=>ipcRenderer.invoke('desktop:reconnect'),
  logout:()=>ipcRenderer.invoke('desktop:logout'),
  importClient:()=>ipcRenderer.invoke('desktop:import-client'),
  rpc:(method,...args)=>ipcRenderer.invoke('desktop:rpc',method,args),

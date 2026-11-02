@@ -152,3 +152,12 @@ A revisão reduziu buscas de categorias repetidas por movimento, eliminou recons
 #### Limpeza dos builds Rust
 
 Ao terminar qualquer manutenção ou atualização execute `python scripts/clean-rust-builds.py`. O workflow Windows executa essa limpeza também em caso de falha. A orientação está registrada em `AGENTS.md`. São removidos apenas os diretórios `target` dos crates deste projeto; `dist/finance.wasm`, dados financeiros, perfis, credenciais e backups não são apagados. O cache global do Cargo e diretórios de outros projetos permanecem preservados.
+
+
+### Recuperação da conexão Google — Windows 1.8.1
+
+O modo Google antigo agora distingue autorização expirada/revogada (`invalid_grant`/HTTP 401), configuração OAuth recusada, falta de espaço no Drive e outros erros de requisição. Mensagens brutas do servidor e tokens não são exibidos. Depois de uma falha definitiva de renovação, o token rejeitado deixa de ser reenviado em segundo plano; os dados locais e o diário de sincronização permanecem intactos.
+
+Em **Perfil e cópias → Reconectar Google**, autorize novamente **a mesma conta**. A reconexão não exige sair do perfil e retoma a sincronização normal, preservando verificações de conflito. Escolher outra conta ou cancelar não substitui as credenciais anteriores nem os lançamentos. A reconexão só atualiza credenciais após validar a identidade. Erros de configuração do cliente e requisições inválidas podem precisar de outra correção; reconectar não contorna as regras OAuth do Google.
+
+Antes de qualquer recuperação, pode-se usar **Configurações → Baixar cópia JSON**. A alternativa **Copiar estes dados para o perfil local** continua disponível e não depende da autorização Google. Depois, uma pasta sincronizada pelo Drive para computador pode receber as cópias opcionais.

@@ -8,6 +8,7 @@ const {FinanceDrive}=require('./drive.cjs');
 const {LocalFinance,CacheFile}=require('./local-cache.cjs');
 const {openPersonal,hasPersonal}=require('./personal-finance.cjs');
 const {Updates}=require('./updates.cjs');
+const {reconnectGoogle}=require('./reconnect.cjs');
 const {pdfHtml}=require('../generated/shared.cjs');
 const {autoUpdater}=require('electron-updater');
 const ROOT=path.resolve(__dirname,'..');
@@ -47,6 +48,13 @@ function installIPC(){
  handle('local-login',name=>localLogin(name));
  handle('migrate-local',()=>localLogin('',true));
  handle('login',()=>login(true));
+ handle('reconnect',async()=>{
+  if(loggingIn)throw Error('Aguarde a operação atual.');loggingIn=true;
+  try{const client=await config();if(!client)throw Error('A conexão Google não está configurada. Use o perfil local.');
+   auth=await reconnectGoogle({local,drive,createAuth:()=>new GoogleAuth({client,vault:new Vault(app.getPath('userData'),safeStorage),openExternal:url=>shell.openExternal(url)})});
+   await local.synchronize();return local.status();
+  }finally{loggingIn=false;}
+ });
  handle('logout',async()=>{if(local?.syncTask||local?.localWrites||loggingIn)throw Error('Aguarde a operação terminar.');local?.stop();await local?.flushLocal();await auth?.logout();local=null;drive=null;auth=null;await win.loadFile(page('ui/login.html'));});
  handle('import-client',async()=>{
   if(drive)throw Error('Saia da conta antes de configurar.');
@@ -56,7 +64,7 @@ function installIPC(){
  handle('update',(action='check')=>{switch(action){case 'status':return updates.status();case 'check':return updates.check();case 'download':return updates.download();case 'install':return updates.install();default:throw Error('Operação de atualização não permitida.');}});
  handle('rpc',async(method,args)=>{
   if(!local)throw Error('Abra um perfil para continuar.');if(!Array.isArray(args)||Buffer.byteLength(JSON.stringify(args))>4_100_000)throw Error('Dados excedem o limite.');
-  if(loggingIn&&['saveFinance','restoreFinanceBackup','resolveConflict','chooseFolder'].includes(method))throw Error('Aguarde a troca de perfil terminar.');
+  if(loggingIn&&!['loadFinance','syncStatus','openLocalFolder','exportFinancePdf'].includes(method))throw Error('Aguarde a troca de perfil terminar.');
   switch(method){case'chooseFolder':{if(!local.chooseFolder)throw Error('Copie os dados para o perfil local primeiro.');if(local.syncTask||local.localWrites)throw Error('Aguarde a gravação terminar.');const result=await dialog.showOpenDialog(win,{title:'Escolha uma pasta sincronizada pelo Drive para computador, ou outra pasta de cópias',properties:['openDirectory','createDirectory']});if(result.canceled)return local.status();return local.chooseFolder(result.filePaths[0]);}case'loadFinance':return local.loadFinance();case'saveFinance':return local.saveFinance(...args);case'listFinanceBackups':return local.listFinanceBackups(...args);case'restoreFinanceBackup':return local.restoreFinanceBackup(...args);case'openLocalFolder':{const directory=path.dirname(local.storage.file);await fs.mkdir(directory,{recursive:true});const error=await shell.openPath(directory);if(error)throw Error('Não foi possível abrir a pasta local.');return{ok:true};}case'syncStatus':return local.status();case'syncNow':return local.synchronize();case'resolveConflict':return local.resolveConflict(...args);case'exportFinancePdf':return exportPDF(...args);default:throw Error('Operação não permitida.');}
  });
 }
