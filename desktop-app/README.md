@@ -35,3 +35,10 @@ npm run dist:win
 ```
 
 O workflow **Instalador Windows** executa os testes, compila e publica o instalador e o manifesto de atualização. A publicação não exige credenciais Google. O secret opcional `GOOGLE_DESKTOP_CLIENT_JSON`, quando presente, mantém a conexão OAuth apenas para compatibilidade com a edição anterior. Nunca inclua tokens de usuários no repositório.
+
+
+## Importar fatura Nubank
+
+Em Lançamentos, escolha **Importar fatura Nubank** para CSV, OFX ou PDF com texto selecionável. Informe o vencimento antes de selecionar um PDF; opcionalmente use o vencimento também com CSV/OFX. Confira a prévia, a fonte de cartão, categorias, datas e totais antes de confirmar. Para a conta corrente há um botão separado (CSV/OFX). PDFs digitalizados ou com layout não reconhecido devem ser exportados em CSV/OFX.
+
+Depois de qualquer build, teste ou manutenção, execute `python scripts/clean-rust-builds.py` na raiz. Não apague o cache de dados financeiros. O CI faz a limpeza também se o build falhar.

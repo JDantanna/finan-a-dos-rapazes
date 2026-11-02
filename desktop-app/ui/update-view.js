@@ -27,7 +27,7 @@ window.UpdateView=(()=>{
  async function run(action){
   pending=true;feedback='';try{const task=window.desktop.checkUpdate(action);await refresh();paint(await task);}catch{feedback='Não foi possível concluir. Tente novamente.';dialog.querySelector('.update-message').textContent=feedback;}finally{pending=false;if(dialog.open)await refresh();}
  }
- async function refresh(){if(reading)return;reading=true;try{paint(await window.desktop.checkUpdate('status'));}catch{/* Window may be closing during installation. */}finally{reading=false;}}
- async function open(){create();feedback='';if(!dialog.open)dialog.showModal();await refresh();const s=await window.desktop.checkUpdate('status');if(['idle','error','current'].includes(s.phase)&&!pending)await run('check');}
+ async function refresh(){if(reading)return;reading=true;try{const status=await window.desktop.checkUpdate('status');paint(status);return status;}catch{/* Window may be closing during installation. */}finally{reading=false;}}
+ async function open(){create();feedback='';if(!dialog.open)dialog.showModal();const s=await refresh();if(s&&['idle','error','current'].includes(s.phase)&&!pending)await run('check');}
  return Object.freeze({open});
 })();

@@ -2,7 +2,7 @@ name: Instalador Windows
 on:
   push:
     branches: [main]
-    paths: ['desktop-app/**', 'apps-script/**', 'dist/**', 'scripts/build-desktop.py', 'scripts/build-apps-script.py', 'tests/desktop.test.cjs', '.github/workflows/desktop-windows.yml']
+    paths: ['desktop-app/**', 'apps-script/**', 'dist/**', 'scripts/**', 'AGENTS.md', 'tests/desktop.test.cjs', '.github/workflows/desktop-windows.yml']
   workflow_dispatch:
     inputs:
       publish:
@@ -51,6 +51,9 @@ jobs:
             desktop-app/release/latest.yml
           if-no-files-found: error
           retention-days: 30
+      - name: Limpar arquivos temporários de compilação Rust
+        if: always()
+        run: python scripts/clean-rust-builds.py
   publish:
     if: github.event_name == 'workflow_dispatch' && inputs.publish
     needs: windows
@@ -68,4 +71,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=$(node -p "require('./desktop-app/package.json').version")
-          gh release create "v$VERSION" installer/* --target "$GITHUB_SHA" --title "Windows $VERSION" --notes 'Aplicativo Windows com perfil local, sem login Google obrigatório, e cópias opcionais em uma pasta sincronizada. Instale o arquivo .exe. Atualizações pelo botão Checar atualização.' --latest
+          gh release create "v$VERSION" installer/* --target "$GITHUB_SHA" --title "Windows $VERSION" --notes 'Importação de faturas Nubank em CSV, OFX e PDF com texto selecionável; escolha explícita de conta ou cartão e vencimento da fatura. Prévia antes de salvar, prevenção de duplicatas e processamento local. Otimizações da importação e limpeza automática dos builds Rust no desenvolvimento. Atualize dentro do aplicativo em Configurações > Checar atualização.' --latest

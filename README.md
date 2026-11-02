@@ -137,3 +137,18 @@ Escolha uma conta/cartão existente do tipo detectado ou cadastre uma fonte dura
 IDs bancários (ou uma identidade estável para linhas sem ID) impedem reimportações na mesma fonte. Coincidências exatas de fonte, descrição, data, tipo e valor são também excluídas por precaução. Alterações na descrição entre formatos, fontes recriadas ou lançamentos manuais com datas diferentes podem exigir revisão. Não há conciliação automática de recorrências já cadastradas. Pagamentos de fatura e possíveis investimentos/transferências internas começam desmarcados para evitar dupla contagem; receitas de transferências recebidas devem ser conferidas. Estornos/créditos são receitas e afetam os totais de receita. Descrições acima de 200 bytes são abreviadas no lançamento e preservadas em `importOriginalDescription` na cópia JSON.
 
 A conta não traz os detalhes das compras do cartão: importe a fatura separadamente. Datas seguem o arquivo (podem representar compra, não vencimento); parcelas futuras não presentes no arquivo não são geradas. Importar movimentos não confirma o pagamento de séries recorrentes nem substitui extratos oficiais.
+
+
+### Faturas de cartão Nubank — Windows 1.8.0
+
+Há botões separados para **Importar fatura Nubank** e **Importar extrato da conta** em Lançamentos. A escolha explícita corrige a ambiguidade dos CSVs em português. OFX continua validando se o conteúdo pertence a cartão ou conta. Faturas aceitam CSV, OFX e agora PDF com texto selecionável; extratos da conta continuam em CSV/OFX.
+
+Para PDF, informe o vencimento antes de selecionar o arquivo. As compras vão para essa data, preservando a data da compra em `importOriginalDate` e o vencimento em `importStatementDueDate`. Em CSV/OFX, o vencimento é opcional; vazio preserva as datas originais. Valores positivos de CSV de cartão representam despesas e negativos representam créditos; OFX usa o sinal bancário. Não são criadas parcelas futuras que não estejam no arquivo.
+
+PDFs são interpretados localmente pelo PDF.js, carregado somente ao selecionar um PDF. Apenas os dois módulos necessários e a licença entram no instalador. Não há OCR, upload para IA, leitura de documentos protegidos por senha ou garantia para todos os layouts de fatura. Limites: 5 MB, 60 páginas, 10.000 movimentos e 1 milhão de caracteres extraídos. Arquivos não reconhecidos ou linhas datadas que não possam ser interpretadas são recusados antes de salvar. Se isso ocorrer, use CSV/OFX. Sempre confira a prévia e os totais com a fatura original; parcelas e recorrências previamente cadastradas não são conciliadas automaticamente.
+
+A revisão reduziu buscas de categorias repetidas por movimento, eliminou reconstruções desnecessárias de listas, consolidou o cálculo dos totais, liberou dados temporários ao fechar a importação e removeu uma consulta duplicada no diálogo de atualização. Testes cobrem PDF binário com extração real, CSV/OFX, sinais, estornos, mês de vencimento, virada do ano, duplicatas, interface e preservação de dados.
+
+#### Limpeza dos builds Rust
+
+Ao terminar qualquer manutenção ou atualização execute `python scripts/clean-rust-builds.py`. O workflow Windows executa essa limpeza também em caso de falha. A orientação está registrada em `AGENTS.md`. São removidos apenas os diretórios `target` dos crates deste projeto; `dist/finance.wasm`, dados financeiros, perfis, credenciais e backups não são apagados. O cache global do Cargo e diretórios de outros projetos permanecem preservados.
